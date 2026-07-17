@@ -356,6 +356,36 @@ export default function Catalog() {
                       {availCount > 0 ? `${availCount}/${totalCount} Available` : "Checked Out"}
                     </Badge>
                   </div>
+
+                  {/* Quick hold — mobile/tablet only, so students can reserve without opening the modal */}
+                  <div className="mt-3 lg:hidden">
+                    {hasHold ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-2 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 cursor-default hover:bg-emerald-500/5 hover:border-emerald-500/30"
+                        disabled
+                      >
+                        <BookmarkCheck className="size-4" />
+                        Hold Requested
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="w-full gap-2"
+                        isLoading={holdMutation.isPending && holdMutation.variables === book.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePlaceHold(book.id);
+                        }}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      >
+                        <Bookmark className="size-4" />
+                        Request Hold
+                      </Button>
+                    )}
+                  </div>
                 </GlassCard>
               </motion.div>
             );

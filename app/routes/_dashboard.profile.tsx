@@ -450,71 +450,121 @@ function BorrowingPanel({ data, loading }: { data: any[] | undefined; loading: b
   }
 
   return (
-    <div className="overflow-x-auto -mx-6 px-6 animate-fadeIn">
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr className="border-b border-gold-400/10 text-[10px] font-bold uppercase tracking-wider text-mist">
-            <th className="pb-3 font-semibold">Book</th>
-            <th className="pb-3 font-semibold">Status</th>
-            <th className="pb-3 font-semibold">Issued</th>
-            <th className="pb-3 font-semibold">Due</th>
-            <th className="pb-3 font-semibold">Returned</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gold-400/5">
-          {data.map((b) => {
-            const statusColors: Record<string, string> = {
-              active: "bg-gold-500/10 text-gold-600 dark:text-gold-400 border-gold-500/20",
-              returned: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
-              overdue: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
-              lost: "bg-ink-500/10 text-ink-600 dark:text-ink-400 border-ink-500/20",
-            };
-            return (
-              <tr key={b.id} className="text-sm group">
-                <td className="py-4 pr-4">
-                  <div className="flex items-center gap-3">
-                    {b.coverUrl ? (
-                      <img
-                        src={b.coverUrl}
-                        alt={b.title}
-                        className="w-9 h-12 rounded object-cover shadow border border-gold-400/10 shrink-0"
-                      />
-                    ) : (
-                      <div className="grid w-9 h-12 place-items-center rounded bg-ink-900 border border-gold-400/10 shrink-0">
-                        <BookOpen className="size-4 text-gold-500/40" />
+    <>
+      {/* Mobile: stacked cards */}
+      <ul className="space-y-3 md:hidden animate-fadeIn">
+        {data.map((b) => {
+          const statusColors: Record<string, string> = {
+            active: "bg-gold-500/10 text-gold-600 dark:text-gold-400 border-gold-500/20",
+            returned: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
+            overdue: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+            lost: "bg-ink-500/10 text-ink-600 dark:text-ink-400 border-ink-500/20",
+          };
+          return (
+            <li
+              key={b.id}
+              className="flex items-center gap-3 rounded-xl border border-gold-400/10 bg-ink-500/5 p-3"
+            >
+              {b.coverUrl ? (
+                <img
+                  src={b.coverUrl}
+                  alt={b.title}
+                  className="w-10 h-14 rounded object-cover shadow border border-gold-400/10 shrink-0"
+                />
+              ) : (
+                <div className="grid w-10 h-14 place-items-center rounded bg-ink-900 border border-gold-400/10 shrink-0">
+                  <BookOpen className="size-4 text-gold-500/40" />
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <a
+                  href={`/catalog?book=${b.bookId}`}
+                  className="block font-medium text-ink-800 dark:text-ivory hover:text-gold-500 transition-colors line-clamp-1"
+                >
+                  {b.title}
+                </a>
+                <p className="text-xs text-mist line-clamp-1">{b.authors}</p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-mist">
+                  <span>Issued {formatDate(b.issueDate)}</span>
+                  <span>Due {formatDate(b.dueDate)}</span>
+                  {b.returnDate && <span>Returned {formatDate(b.returnDate)}</span>}
+                </div>
+              </div>
+              <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold border ${statusColors[b.status] || statusColors.active}`}>
+                {b.status}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* Desktop: table */}
+      <div className="hidden overflow-x-auto md:block -mx-6 px-6 animate-fadeIn">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b border-gold-400/10 text-[10px] font-bold uppercase tracking-wider text-mist">
+              <th className="pb-3 font-semibold">Book</th>
+              <th className="pb-3 font-semibold">Status</th>
+              <th className="pb-3 font-semibold">Issued</th>
+              <th className="pb-3 font-semibold">Due</th>
+              <th className="pb-3 font-semibold">Returned</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gold-400/5">
+            {data.map((b) => {
+              const statusColors: Record<string, string> = {
+                active: "bg-gold-500/10 text-gold-600 dark:text-gold-400 border-gold-500/20",
+                returned: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
+                overdue: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+                lost: "bg-ink-500/10 text-ink-600 dark:text-ink-400 border-ink-500/20",
+              };
+              return (
+                <tr key={b.id} className="text-sm group">
+                  <td className="py-4 pr-4">
+                    <div className="flex items-center gap-3">
+                      {b.coverUrl ? (
+                        <img
+                          src={b.coverUrl}
+                          alt={b.title}
+                          className="w-9 h-12 rounded object-cover shadow border border-gold-400/10 shrink-0"
+                        />
+                      ) : (
+                        <div className="grid w-9 h-12 place-items-center rounded bg-ink-900 border border-gold-400/10 shrink-0">
+                          <BookOpen className="size-4 text-gold-500/40" />
+                        </div>
+                      )}
+                      <div>
+                        <a
+                          href={`/catalog?book=${b.bookId}`}
+                          className="font-medium text-ink-800 dark:text-ivory hover:text-gold-500 transition-colors line-clamp-1"
+                        >
+                          {b.title}
+                        </a>
+                        <p className="text-xs text-mist line-clamp-1">{b.authors}</p>
                       </div>
-                    )}
-                    <div>
-                      <a
-                        href={`/catalog?book=${b.bookId}`}
-                        className="font-medium text-ink-800 dark:text-ivory hover:text-gold-500 transition-colors line-clamp-1"
-                      >
-                        {b.title}
-                      </a>
-                      <p className="text-xs text-mist line-clamp-1">{b.authors}</p>
                     </div>
-                  </div>
-                </td>
-                <td className="py-4 pr-4">
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold border ${statusColors[b.status] || statusColors.active}`}>
-                    {b.status}
-                  </span>
-                </td>
-                <td className="py-4 pr-4 text-xs text-mist font-medium">
-                  {formatDate(b.issueDate)}
-                </td>
-                <td className="py-4 pr-4 text-xs text-mist font-medium">
-                  {formatDate(b.dueDate)}
-                </td>
-                <td className="py-4 text-xs text-mist font-medium">
-                  {b.returnDate ? formatDate(b.returnDate) : <span className="text-gold-500/40">—</span>}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                  </td>
+                  <td className="py-4 pr-4">
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold border ${statusColors[b.status] || statusColors.active}`}>
+                      {b.status}
+                    </span>
+                  </td>
+                  <td className="py-4 pr-4 text-xs text-mist font-medium">
+                    {formatDate(b.issueDate)}
+                  </td>
+                  <td className="py-4 pr-4 text-xs text-mist font-medium">
+                    {formatDate(b.dueDate)}
+                  </td>
+                  <td className="py-4 text-xs text-mist font-medium">
+                    {b.returnDate ? formatDate(b.returnDate) : <span className="text-gold-500/40">—</span>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 

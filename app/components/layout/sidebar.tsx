@@ -23,7 +23,7 @@ export function Sidebar({ user }: { user: AuthUser }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setSidebar(false)}
-            className="fixed inset-0 z-30 bg-ink-950/60 backdrop-blur-sm lg:hidden"
+             className="fixed inset-0 z-50 bg-ink-950/60 backdrop-blur-sm lg:hidden"
             aria-label="Close menu"
           />
         )}
@@ -32,7 +32,7 @@ export function Sidebar({ user }: { user: AuthUser }) {
       {/* Drawer / static rail */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-72 flex-col gap-6 p-5 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col gap-6 p-5 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:translate-x-0",
           "glass border-r border-gold-400/10",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}

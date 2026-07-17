@@ -8,3 +8,6 @@
 
 # Generated analysis artifacts
 /graphify-out/
+
+# Internal tooling
+/.commandcode/

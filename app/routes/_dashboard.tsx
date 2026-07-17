@@ -5,6 +5,7 @@ import type { Route } from "./+types/_dashboard";
 import { requireAuth } from "~/lib/auth";
 import { Sidebar } from "~/components/layout/sidebar";
 import { Topbar } from "~/components/layout/topbar";
+import { MobileNav } from "~/components/layout/mobile-nav";
 import { AppProvider } from "~/providers/app-context";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -33,11 +34,12 @@ export default function DashboardLayout() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, ease: LUX_EASE }}
-            className="mx-auto max-w-6xl px-4 pb-16 pt-6 sm:px-6"
+            className="mx-auto max-w-6xl px-4 pb-24 pt-6 sm:px-6 lg:pb-16"
           >
             <Outlet />
           </motion.main>
         </div>
+        <MobileNav user={user} />
       </div>
     </AppProvider>
   );
