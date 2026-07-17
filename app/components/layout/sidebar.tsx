@@ -29,26 +29,26 @@ export function Sidebar({ user }: { user: AuthUser }) {
         )}
       </AnimatePresence>
 
-      {/* Drawer / static rail */}
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col gap-6 p-5 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:translate-x-0",
-          "glass border-r border-gold-400/10",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full",
-        )}
-      >
-        <div className="flex items-center justify-between">
-          <NavLink to="/" onClick={() => setSidebar(false)}>
-            <Logo />
-          </NavLink>
-          <button
-            onClick={() => setSidebar(false)}
-            className="rounded-lg p-1.5 text-mist hover:bg-ink-500/10 lg:hidden"
-            aria-label="Close menu"
-          >
-            <X className="size-5" />
-          </button>
-        </div>
+       {/* Drawer / static rail */}
+       <aside
+         className={cn(
+           "fixed inset-y-0 left-0 z-50 flex w-72 flex-col gap-6 rounded-r-3xl p-5 shadow-elevate transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:translate-x-0 lg:rounded-none lg:shadow-none",
+           "glass border-r border-gold-400/10",
+           sidebarOpen ? "translate-x-0" : "-translate-x-full",
+         )}
+       >
+         <div className="flex items-center justify-between">
+           <NavLink to="/" onClick={() => setSidebar(false)}>
+             <Logo />
+           </NavLink>
+           <button
+             onClick={() => setSidebar(false)}
+             className="grid size-9 place-items-center rounded-full border border-gold-400/15 bg-ink-500/5 text-mist transition-all hover:border-gold-400/30 hover:bg-ink-500/10 hover:text-ink-800 active:scale-95 dark:hover:text-ivory lg:hidden"
+             aria-label="Close menu"
+           >
+             <X className="size-5" />
+           </button>
+         </div>
 
         <nav className="flex flex-1 flex-col gap-1">
           {items.map((item) => (

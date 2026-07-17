@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Form, useNavigation } from "react-router";
+import { Form, NavLink, useNavigation } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { LogOut, Menu, Moon, Sun } from "lucide-react";
 import { useUIStore } from "~/stores/ui-store";
 import { Badge } from "~/components/ui/badge";
 import { NotificationsBell } from "~/components/layout/notifications-bell";
+import { LogoMark } from "~/components/ui/logo";
 import { getInitials, cn } from "~/lib/utils";
 import { ROLE_LABELS, type AuthUser } from "~/lib/supabase/types";
 
@@ -16,17 +17,24 @@ export function Topbar({ user }: { user: AuthUser }) {
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-4 border-b border-gold-400/10 bg-paper-50/80 px-4 backdrop-blur-md dark:bg-ink-950/80 sm:px-6">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
         <button
           onClick={toggleSidebar}
-          className="rounded-lg p-2 text-ink-500 transition-colors hover:bg-ink-500/10 dark:text-ink-300 lg:hidden"
+          className="grid size-10 place-items-center rounded-xl border border-gold-400/20 bg-ink-500/5 text-ink-600 transition-all hover:border-gold-400/40 hover:bg-ink-500/10 active:scale-95 dark:bg-ink-900/40 dark:text-ink-200 lg:hidden"
           aria-label="Open menu"
         >
           <Menu className="size-5" />
         </button>
-        <span className="hidden font-serif text-lg text-ink-700 dark:text-ivory sm:block">
-          Athenaeum
-        </span>
+        <NavLink
+          to="/dashboard"
+          aria-label="Athenaeum home"
+          className="flex items-center gap-2.5"
+        >
+          <LogoMark className="size-8" />
+          <span className="hidden font-display text-xl leading-none text-ink-800 dark:text-ivory sm:block">
+            Athen<span className="text-gold-gradient">aeum</span>
+          </span>
+        </NavLink>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">

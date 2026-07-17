@@ -167,7 +167,7 @@ export function NotificationsBell() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.97 }}
               transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-              className="glass-strong absolute right-0 z-20 mt-2 w-80 rounded-xl p-2"
+              className="glass-strong absolute right-0 z-20 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-xl p-2"
               role="menu"
             >
               <div className="flex items-center justify-between px-3 py-2.5">

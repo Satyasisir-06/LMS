@@ -1,4 +1,5 @@
 import {
+  AlarmClock,
   BookOpen,
   BookMarked,
   Heart,
@@ -43,6 +44,13 @@ export const navItems: NavItem[] = [
     to: "/circulation",
     icon: Library,
     description: "Borrow, return & holds",
+    roles: ["librarian", "admin"],
+  },
+  {
+    label: "Overdue",
+    to: "/overdue",
+    icon: AlarmClock,
+    description: "Overdue books & fines",
     roles: ["librarian", "admin"],
   },
   {

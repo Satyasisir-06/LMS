@@ -12,6 +12,8 @@ export const signupSchema = z.object({
   role: z.enum(["student", "faculty"]),
   student_id: z.string().optional(),
   department: z.string().optional(),
+  academic_year: z.string().optional(),
+  semester: z.string().optional(),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

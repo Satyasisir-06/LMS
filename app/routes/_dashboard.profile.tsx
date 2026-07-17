@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRevalidator } from "react-router";
-import { Building2, GraduationCap, IdCard, Mail, CalendarDays, CircleDollarSign, QrCode, X, Camera, Trash2, BookOpen, Heart, Sparkles, History } from "lucide-react";
+import { Building2, GraduationCap, IdCard, Mail, CalendarDays, CircleDollarSign, QrCode, X, Camera, Trash2, BookOpen, Heart, Sparkles, History, Bell } from "lucide-react";
 import QRCode from "react-qr-code";
 
 import type { Route } from "./+types/_dashboard.profile";
@@ -12,9 +12,10 @@ import { GlassCard } from "~/components/ui/glass-card";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { ROLE_LABELS } from "~/lib/supabase/types";
-import { formatDate, getInitials } from "~/lib/utils";
+import { formatDate, getInitials, cn } from "~/lib/utils";
 import { getUserFines } from "~/lib/supabase/analytics";
 import { getWishlist, getRecommendations } from "~/lib/supabase/library";
+import { getReminderHistory, type ReminderRow } from "~/lib/supabase/overdue";
 import { useToastStore } from "~/stores/toast-store";
 
 export function meta({}: Route.MetaArgs) {
@@ -315,7 +316,7 @@ function FinesPanel() {
 function ActivityPanel() {
   const user = useUser();
   const supabase = getSupabaseBrowserClient();
-  const [activeTab, setActiveTab] = useState<"borrowing" | "wishlist" | "recommendations">("borrowing");
+  const [activeTab, setActiveTab] = useState<"borrowing" | "wishlist" | "recommendations" | "reminders">("borrowing");
 
   // Query 1: Borrowings
   const { data: borrowings, isLoading: isBorrowingsLoading } = useQuery({
@@ -360,6 +361,7 @@ function ActivityPanel() {
           dueDate: row.due_date,
           returnDate: row.return_date,
           status: row.status as "active" | "returned" | "overdue" | "lost",
+          fineAmount: Number(row.fine_amount) || 0,
           barcode: row.book_copies?.barcode,
           bookId: book?.id,
           title: book?.title ?? "Unknown Title",
@@ -419,6 +421,17 @@ function ActivityPanel() {
           <Sparkles className="size-4" />
           Recommendations
         </button>
+        <button
+          onClick={() => setActiveTab("reminders")}
+          className={`flex items-center gap-2 pb-4 text-xs font-semibold uppercase tracking-[0.15em] border-b-2 transition-all shrink-0 cursor-pointer ${
+            activeTab === "reminders"
+              ? "border-gold-500 text-gold-500 font-bold"
+              : "border-transparent text-mist hover:text-ink-800 dark:hover:text-ivory"
+          }`}
+        >
+          <Bell className="size-4" />
+          Reminders
+        </button>
       </div>
 
       {/* Tab Panels */}
@@ -431,6 +444,9 @@ function ActivityPanel() {
         )}
         {activeTab === "recommendations" && (
           <RecommendationsPanel data={recommendations} loading={isRecsLoading} />
+        )}
+        {activeTab === "reminders" && (
+          <RemindersPanel userId={user.id} />
         )}
       </div>
     </GlassCard>
@@ -489,6 +505,7 @@ function BorrowingPanel({ data, loading }: { data: any[] | undefined; loading: b
                   <span>Due {formatDate(b.dueDate)}</span>
                   {b.returnDate && <span>Returned {formatDate(b.returnDate)}</span>}
                 </div>
+                {!b.returnDate && <DueBadge due={b.dueDate} fine={b.fineAmount} className="mt-2" />}
               </div>
               <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold border ${statusColors[b.status] || statusColors.active}`}>
                 {b.status}
@@ -554,6 +571,7 @@ function BorrowingPanel({ data, loading }: { data: any[] | undefined; loading: b
                   </td>
                   <td className="py-4 pr-4 text-xs text-mist font-medium">
                     {formatDate(b.dueDate)}
+                    {!b.returnDate && <DueBadge due={b.dueDate} fine={b.fineAmount} className="mt-1" />}
                   </td>
                   <td className="py-4 text-xs text-mist font-medium">
                     {b.returnDate ? formatDate(b.returnDate) : <span className="text-gold-500/40">—</span>}
@@ -649,5 +667,88 @@ function RecommendationsPanel({ data, loading }: { data: any[] | undefined; load
         );
       })}
     </div>
+  );
+}
+
+/** Color-coded due-date countdown + fine for the student portal (requirement 12). */
+function DueBadge({
+  due,
+  fine,
+  className,
+}: {
+  due: string;
+  fine: number;
+  className?: string;
+}) {
+  const days = Math.floor((new Date(due).getTime() - Date.now()) / 86400000);
+  const overdue = days < 0;
+  const label = overdue
+    ? `${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"} overdue`
+    : days === 0
+      ? "Due today"
+      : `Due in ${days} day${days === 1 ? "" : "s"}`;
+
+  return (
+    <div className={cn("flex flex-wrap items-center gap-2", className)}>
+      <span
+        className={cn(
+          "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold",
+          overdue
+            ? "bg-red-500/15 text-red-600 dark:text-red-300 border border-red-500/25"
+            : days === 0
+              ? "bg-yellow-400/15 text-yellow-700 dark:text-yellow-300 border border-yellow-400/30"
+              : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/25",
+        )}
+      >
+        {label}
+      </span>
+      {fine > 0 && (
+        <span className="inline-flex items-center rounded-full bg-gold-400/15 px-2 py-0.5 text-[11px] font-semibold text-gold-600 dark:text-gold-300 border border-gold-400/25">
+          Fine ${fine.toFixed(2)}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function RemindersPanel({ userId }: { userId: string }) {
+  const supabase = getSupabaseBrowserClient();
+  const { data: reminders = [], isLoading } = useQuery({
+    queryKey: ["student-reminders", userId],
+    queryFn: () => getReminderHistory(supabase, userId),
+  });
+
+  if (isLoading) return <p className="text-sm text-mist">Loading reminders…</p>;
+  if (reminders.length === 0) {
+    return (
+      <div className="text-center py-10 px-4">
+        <Bell className="size-10 text-gold-500/30 mx-auto mb-3" />
+        <h4 className="font-serif text-sm font-semibold text-ink-800 dark:text-ivory">No reminders yet</h4>
+        <p className="text-xs text-mist mt-1 max-w-xs mx-auto">
+          You'll see due-date and overdue reminders from the library here.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <ul className="space-y-2 animate-fadeIn">
+      {reminders.map((r: ReminderRow) => (
+        <li
+          key={r.id}
+          className="flex items-center justify-between rounded-xl border border-gold-400/10 bg-ink-500/5 px-4 py-3 text-sm"
+        >
+          <div className="min-w-0">
+            <p className="font-medium capitalize text-ink-800 dark:text-ivory">
+              {r.kind.replace("_", " ")} · <span className="text-mist normal-case">{r.channel}</span>
+            </p>
+            {r.message && <p className="truncate text-xs text-mist">{r.message}</p>}
+          </div>
+          <span className="ml-3 shrink-0 text-xs text-mist">
+            {new Date(r.sent_at).toLocaleDateString()}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }

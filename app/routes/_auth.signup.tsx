@@ -35,6 +35,8 @@ export async function action({ request }: Route.ActionArgs) {
         role: parsed.data.role,
         student_id: parsed.data.student_id || null,
         department: parsed.data.department || null,
+        academic_year: parsed.data.academic_year || null,
+        semester: parsed.data.semester || null,
       },
     },
   });
@@ -171,6 +173,21 @@ export default function Signup() {
                   error={errors.student_id?.message}
                   {...register("student_id")}
                 />
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <TextField
+                    label="Academic Year"
+                    type="number"
+                    placeholder="e.g. 2026"
+                    error={errors.academic_year?.message}
+                    {...register("academic_year")}
+                  />
+                  <TextField
+                    label="Semester"
+                    placeholder="e.g. Fall"
+                    error={errors.semester?.message}
+                    {...register("semester")}
+                  />
+                </div>
               </motion.div>
             )}
 

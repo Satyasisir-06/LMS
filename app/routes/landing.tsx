@@ -10,6 +10,7 @@ import {
   Sparkles,
   ArrowUpRight,
   BookMarked,
+  LayoutDashboard,
   Sun,
   Moon
 } from "lucide-react";
@@ -30,6 +31,14 @@ export function meta({}: Route.MetaArgs) {
   return [
     { title: "Athenaeum — The Quiet Sanctuary for Scholars" },
     { name: "description", content: "A premium library management and circulation system built with quiet luxury styling." }
+  ];
+}
+
+export function links() {
+  return [
+    { rel: "preload", as: "image", href: "/cover-1.webp" },
+    { rel: "preload", as: "image", href: "/cover-2.webp" },
+    { rel: "preload", as: "image", href: "/cover-3.webp" },
   ];
 }
 
@@ -64,13 +73,13 @@ export default function Landing() {
 
       {/* Floating Navbar */}
       <header className="sticky top-0 z-50 w-full border-b border-gold-400/10 bg-[#f3efe4]/80 backdrop-blur-md dark:bg-ink-900/80">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 sm:px-8">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4 sm:h-20 sm:px-8">
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             className="cursor-pointer focus:outline-none"
             aria-label="Scroll to top"
           >
-            <Logo />
+            <Logo className="[&>span]:hidden sm:[&>span]:inline-flex" />
           </button>
           
           <nav className="hidden items-center gap-8 md:flex">
@@ -94,7 +103,7 @@ export default function Landing() {
             </a>
           </nav>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             {/* Theme Toggle Switcher */}
             <button
               onClick={toggleTheme}
@@ -117,22 +126,23 @@ export default function Landing() {
 
             {isAuthenticated ? (
               <Link to="/dashboard">
-                <Button variant="primary" size="sm" type="button" className="flex items-center gap-1.5 font-semibold">
-                  Dashboard
-                  <ArrowRight className="size-4" />
+                <Button variant="primary" size="sm" type="button" aria-label="Go to Dashboard" className="flex items-center gap-1.5 font-semibold">
+                  <LayoutDashboard className="size-4" />
+                  <span className="hidden sm:inline">Dashboard</span>
                 </Button>
               </Link>
             ) : (
               <>
                 <Link
                   to="/login"
-                  className="text-sm font-semibold tracking-wide text-ink-700 hover:text-gold-600 dark:text-ink-200 dark:hover:text-gold-300 transition-colors"
+                  className="hidden text-sm font-semibold tracking-wide text-ink-700 hover:text-gold-600 dark:text-ink-200 dark:hover:text-gold-300 transition-colors sm:block"
                 >
                   Sign In
                 </Link>
                 <Link to="/signup">
                   <Button variant="primary" size="sm" type="button" className="flex items-center gap-1 font-semibold">
-                    Register
+                    <span className="hidden sm:inline">Register</span>
+                    <ArrowRight className="size-4 sm:hidden" />
                   </Button>
                 </Link>
               </>
@@ -237,6 +247,46 @@ export default function Landing() {
             </motion.div>
           </div>
 
+          {/* Mobile / tablet visual — elegant floating book shelf (3D collage is desktop-only) */}
+          <div className="relative flex flex-col items-center lg:hidden">
+            <div className="pointer-events-none absolute -top-6 size-48 rounded-full bg-gold-400/15 blur-[90px]" />
+            <div className="relative flex items-end justify-center gap-2.5 pb-4 sm:gap-3">
+              <div className="absolute inset-x-2 bottom-0 h-px bg-gradient-to-r from-transparent via-gold-400/50 to-transparent" />
+              {bookCovers.slice(0, 5).map((c, i) => (
+                <motion.div
+                  key={c.src}
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 * i + 0.2 }}
+                  className="relative"
+                >
+                  <motion.div
+                    animate={{ y: [0, -7, 0] }}
+                    transition={{
+                      duration: 3.5 + i * 0.4,
+                      repeat: Infinity,
+                      repeatType: "reverse",
+                      ease: "easeInOut",
+                    }}
+                    className="aspect-[2/3] w-14 overflow-hidden rounded-md border border-gold-400/30 bg-white shadow-[0_12px_26px_-12px_rgba(197,160,89,0.5)] dark:bg-ink-900 sm:w-16"
+                  >
+                    <img
+                      src={c.src}
+                      alt={c.title}
+                      decoding="async"
+                      fetchPriority={i === 0 ? "high" : "auto"}
+                      className="size-full object-cover"
+                    />
+                  </motion.div>
+                </motion.div>
+              ))}
+            </div>
+            <div className="mt-1 flex items-center gap-2 rounded-full border border-gold-400/30 bg-white/70 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-gold-700 backdrop-blur dark:bg-ink-900/60 dark:text-gold-300">
+              <span className="size-2 animate-pulse rounded-full bg-gold-500" />
+              8 Classics Seeded Real-Time
+            </div>
+          </div>
+
           {/* Hero Right Content - Floating 3D Book Cover Collage */}
           <div className="relative hidden h-[600px] w-full flex-col items-center justify-center lg:col-span-6 lg:flex">
             <div className="relative size-full max-w-[480px] [perspective:1200px] [transform-style:preserve-3d]">
@@ -282,6 +332,7 @@ export default function Landing() {
                   <img
                     src={cover.src}
                     alt={cover.title}
+                    decoding="async"
                     className="size-full object-cover rounded-r-md rounded-l-[3px]"
                   />
                   {/* Subtle edge gold highlight & Spine fold line */}

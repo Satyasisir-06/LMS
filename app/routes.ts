@@ -19,6 +19,7 @@ export default [
     route("circulation", "routes/_dashboard.circulation.tsx"),
     route("admin", "routes/_dashboard.admin.tsx"),
     route("profile", "routes/_dashboard.profile.tsx"),
+    route("overdue", "routes/_dashboard.overdue.tsx"),
   ]),
 
   // Sign-out (POST)

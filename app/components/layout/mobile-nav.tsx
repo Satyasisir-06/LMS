@@ -25,7 +25,7 @@ export function MobileNav({ user }: { user: AuthUser }) {
   return (
     <nav
       aria-label="Primary"
-      className="glass-strong fixed inset-x-0 bottom-0 z-40 border-t border-gold-400/15 pb-[env(safe-area-inset-bottom)] lg:hidden"
+      className="glass-strong fixed inset-x-0 bottom-0 z-40 border-t border-gold-400/20 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_-12px_rgba(50,40,25,0.25)] lg:hidden dark:shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.5)]"
     >
       <ul className="mx-auto flex max-w-xl items-stretch justify-around px-2">
         {primary.map((item) => (
@@ -35,7 +35,7 @@ export function MobileNav({ user }: { user: AuthUser }) {
               end={item.to === "/dashboard"}
               className={({ isActive }) =>
                 cn(
-                  "relative flex h-16 w-full flex-col items-center justify-center gap-1 text-[10px] font-medium transition-colors",
+                  "relative flex h-[4.5rem] w-full flex-col items-center justify-center gap-1 text-[10px] font-medium transition-colors",
                   isActive
                     ? "text-gold-600 dark:text-gold-300"
                     : "text-ink-500 hover:text-ink-800 dark:text-ink-300 dark:hover:text-ivory",
@@ -47,11 +47,18 @@ export function MobileNav({ user }: { user: AuthUser }) {
                   {isActive && (
                     <motion.span
                       layoutId="mobile-nav-active"
-                      className="absolute top-0 h-0.5 w-8 rounded-b-full bg-gold-400"
+                      className="absolute top-0 h-[3px] w-9 rounded-b-full bg-gradient-to-r from-gold-400/0 via-gold-400 to-gold-400/0"
                       transition={{ duration: 0.3, ease: LUX_EASE }}
                     />
                   )}
-                  <item.icon className="size-5" />
+                  <span
+                    className={cn(
+                      "grid size-10 place-items-center rounded-full transition-colors",
+                      isActive && "bg-gold-400/15",
+                    )}
+                  >
+                    <item.icon className="size-5" />
+                  </span>
                   <span className="truncate px-1 leading-none">{item.label}</span>
                 </>
               )}
@@ -63,10 +70,12 @@ export function MobileNav({ user }: { user: AuthUser }) {
           <li className="flex-1">
             <button
               onClick={() => setSidebar(true)}
-              className="flex h-16 w-full flex-col items-center justify-center gap-1 text-[10px] font-medium text-ink-500 transition-colors hover:text-ink-800 dark:text-ink-300 dark:hover:text-ivory"
+              className="flex h-[4.5rem] w-full flex-col items-center justify-center gap-1 text-[10px] font-medium text-ink-500 transition-colors hover:text-ink-800 dark:text-ink-300 dark:hover:text-ivory"
               aria-label="Open menu"
             >
-              <MoreHorizontal className="size-5" />
+              <span className="grid size-10 place-items-center rounded-full transition-colors">
+                <MoreHorizontal className="size-5" />
+              </span>
               <span className="leading-none">More</span>
             </button>
           </li>
