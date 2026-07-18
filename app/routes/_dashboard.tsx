@@ -5,7 +5,7 @@ import type { Route } from "./+types/_dashboard";
 import { requireAuth } from "~/lib/auth";
 import { Sidebar } from "~/components/layout/sidebar";
 import { Topbar } from "~/components/layout/topbar";
-import { MobileNav } from "~/components/layout/mobile-nav";
+import { MobileGooeyNav } from "~/components/layout/mobile-gooey-nav";
 import { AppProvider } from "~/providers/app-context";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -39,7 +39,7 @@ export default function DashboardLayout() {
             <Outlet />
           </motion.main>
         </div>
-        <MobileNav user={user} />
+        <MobileGooeyNav user={user} />
       </div>
     </AppProvider>
   );

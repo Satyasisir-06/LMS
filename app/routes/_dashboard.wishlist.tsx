@@ -5,6 +5,7 @@ import { Link } from "react-router";
 
 import type { Route } from "./+types/_dashboard.wishlist";
 import { getSupabaseBrowserClient } from "~/lib/supabase/client";
+import { resolveBookCover } from "~/lib/supabase/covers";
 import { useUser } from "~/providers/app-context";
 import { PageHeader } from "~/components/layout/page-header";
 import { GlassCard } from "~/components/ui/glass-card";
@@ -70,8 +71,8 @@ export default function Wishlist() {
             <motion.div key={item.book_id} variants={fadeUp}>
               <GlassCard className="flex h-full items-center gap-4 p-4 border border-gold-400/20">
                 <div className="relative w-14 aspect-[2/3] shrink-0 overflow-hidden rounded-lg bg-ink-800 border border-parchment-300 dark:border-ink-700">
-                  {item.cover_url ? (
-                    <img src={item.cover_url} alt={item.title} className="h-full w-full object-cover" />
+                  {resolveBookCover(item.cover_url) ? (
+                    <img src={resolveBookCover(item.cover_url) ?? ""} alt={item.title} className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-ink-700 to-ink-900">
                       <BookOpen className="size-5 text-gold-400/40" />

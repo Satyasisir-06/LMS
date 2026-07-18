@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import {
   Link,
-  useSearchParams,
   useActionData,
   data,
   redirect,
@@ -9,7 +8,7 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import { ArrowRight, Lock, Mail } from "lucide-react";
+import { ArrowRight, Lock, Mail, Library, BookOpen, BookmarkCheck, History } from "lucide-react";
 
 import type { Route } from "./+types/_auth.login";
 import { loginSchema, type LoginInput } from "~/lib/validation";
@@ -48,8 +47,6 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Login() {
-  const [searchParams] = useSearchParams();
-
   const actionData = useActionData<typeof action>();
 
   const {
@@ -63,13 +60,23 @@ export default function Login() {
     setFocus("email");
   }, [setFocus]);
 
+  const features = [
+    { icon: BookOpen, label: "Browse Catalog" },
+    { icon: BookmarkCheck, label: "Reserve Books" },
+    { icon: History, label: "Track Loans" },
+  ];
+
   return (
     <motion.div
       variants={staggerContainer}
       initial="hidden"
       animate="show"
+      className="w-full"
     >
-      <motion.div variants={fadeUp}>
+      <motion.div variants={fadeUp} className="mb-8 text-center lg:text-left">
+        <div className="mx-auto mb-5 grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-gold-300 to-gold-500 shadow-glow lg:mx-0">
+          <Library className="size-7 text-ink-950" />
+        </div>
         <h1 className="font-serif text-3xl text-ink-800 dark:text-ivory">
           Welcome back
         </h1>
@@ -77,8 +84,6 @@ export default function Login() {
           Sign in to your Athenaeum account to continue reading.
         </p>
       </motion.div>
-
-
 
       {actionData?.error && (
         <motion.div
@@ -133,6 +138,26 @@ export default function Login() {
           Create an account
         </Link>
       </motion.p>
+
+      <motion.div
+        variants={fadeUp}
+        className="mt-8 grid grid-cols-3 gap-3"
+      >
+        {features.map((f) => {
+          const Icon = f.icon;
+          return (
+            <div
+              key={f.label}
+              className="rounded-xl border border-gold-400/15 bg-ink-500/5 p-3 text-center transition-colors hover:border-gold-400/30"
+            >
+              <Icon className="mx-auto size-5 text-gold-500" />
+              <p className="mt-2 text-[11px] leading-tight text-mist">
+                {f.label}
+              </p>
+            </div>
+          );
+        })}
+      </motion.div>
     </motion.div>
   );
 }

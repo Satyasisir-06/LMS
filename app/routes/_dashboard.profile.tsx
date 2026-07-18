@@ -7,6 +7,7 @@ import QRCode from "react-qr-code";
 import type { Route } from "./+types/_dashboard.profile";
 import { useUser } from "~/providers/app-context";
 import { getSupabaseBrowserClient } from "~/lib/supabase/client";
+import { resolveBookCover } from "~/lib/supabase/covers";
 import { PageHeader } from "~/components/layout/page-header";
 import { GlassCard } from "~/components/ui/glass-card";
 import { Badge } from "~/components/ui/badge";
@@ -37,11 +38,17 @@ export default function Profile() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [department, setDepartment] = useState(profile?.department ?? "");
+  const [academicYear, setAcademicYear] = useState(
+    profile?.academic_year != null ? String(profile.academic_year) : "",
+  );
+  const [semester, setSemester] = useState(profile?.semester ?? "");
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? "");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setDepartment(profile?.department ?? "");
+    setAcademicYear(profile?.academic_year != null ? String(profile.academic_year) : "");
+    setSemester(profile?.semester ?? "");
     setAvatarUrl(profile?.avatar_url ?? "");
   }, [profile]);
 
@@ -67,6 +74,8 @@ export default function Profile() {
       .from("profiles")
       .update({
         department: department || null,
+        academic_year: academicYear ? Number(academicYear) : null,
+        semester: semester || null,
         avatar_url: avatarUrl || null,
       })
       .eq("id", user.id);
@@ -82,6 +91,8 @@ export default function Profile() {
 
   const handleCancel = () => {
     setDepartment(profile?.department ?? "");
+    setAcademicYear(profile?.academic_year != null ? String(profile.academic_year) : "");
+    setSemester(profile?.semester ?? "");
     setAvatarUrl(profile?.avatar_url ?? "");
     setIsEditing(false);
   };
@@ -91,6 +102,16 @@ export default function Profile() {
     { icon: GraduationCap, label: "Membership", value: role ? ROLE_LABELS[role] : null },
     { icon: IdCard, label: "Student ID", value: profile?.student_id ?? null },
     { icon: Building2, label: "Department", value: profile?.department ?? null },
+    ...(role === "student"
+      ? [
+          {
+            icon: CalendarDays,
+            label: "Academic Year",
+            value: profile?.academic_year != null ? String(profile.academic_year) : null,
+          },
+          { icon: BookOpen, label: "Semester", value: profile?.semester ?? null },
+        ]
+      : []),
     { icon: CalendarDays, label: "Member since", value: formatDate(profile?.created_at) },
   ];
 
@@ -170,6 +191,8 @@ export default function Profile() {
           <dl className="mt-4 divide-y divide-gold-400/10">
             {details.map(({ icon: Icon, label, value }) => {
               const isEditable = label === "Department";
+              const isYearEditable = label === "Academic Year";
+              const isSemesterEditable = label === "Semester";
               return (
                 <div key={label} className="flex items-center justify-between py-3.5 gap-4">
                   <dt className="flex items-center gap-2.5 text-sm text-mist shrink-0">
@@ -183,6 +206,22 @@ export default function Profile() {
                         value={department}
                         onChange={(e) => setDepartment(e.target.value)}
                         placeholder="e.g. English Literature"
+                        className="w-full max-w-xs rounded-lg border border-gold-400/20 bg-ink-500/5 px-3 py-1.5 text-right text-sm text-ink-800 focus:border-gold-400/50 focus:outline-none dark:bg-ink-900/50 dark:text-white"
+                      />
+                    ) : isEditing && isYearEditable ? (
+                      <input
+                        type="number"
+                        value={academicYear}
+                        onChange={(e) => setAcademicYear(e.target.value)}
+                        placeholder="e.g. 2026"
+                        className="w-full max-w-xs rounded-lg border border-gold-400/20 bg-ink-500/5 px-3 py-1.5 text-right text-sm text-ink-800 focus:border-gold-400/50 focus:outline-none dark:bg-ink-900/50 dark:text-white"
+                      />
+                    ) : isEditing && isSemesterEditable ? (
+                      <input
+                        type="text"
+                        value={semester}
+                        onChange={(e) => setSemester(e.target.value)}
+                        placeholder="e.g. Fall"
                         className="w-full max-w-xs rounded-lg border border-gold-400/20 bg-ink-500/5 px-3 py-1.5 text-right text-sm text-ink-800 focus:border-gold-400/50 focus:outline-none dark:bg-ink-900/50 dark:text-white"
                       />
                     ) : (
@@ -248,9 +287,9 @@ function FinesPanel() {
             {fines.map((f) => (
               <div key={f.borrowing_id} className="flex items-center justify-between py-3">
                 <div className="flex items-center gap-3">
-                  {f.cover_url ? (
+                  {resolveBookCover(f.cover_url) ? (
                     <img
-                      src={f.cover_url}
+                      src={resolveBookCover(f.cover_url) ?? ""}
                       alt={f.book_title}
                       className="size-10 rounded object-cover border border-gold-400/10"
                     />
@@ -605,9 +644,9 @@ function WishlistPanel({ data, loading }: { data: any[] | undefined; loading: bo
         return (
           <div key={w.book_id} className="group relative flex flex-col rounded-xl bg-ink-500/5 border border-gold-400/5 p-3 hover:border-gold-400/20 transition-all duration-300">
             <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-ink-900 shadow border border-gold-400/10">
-              {w.cover_url ? (
+              {resolveBookCover(w.cover_url) ? (
                 <img
-                  src={w.cover_url}
+                  src={resolveBookCover(w.cover_url) ?? ""}
                   alt={w.title}
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
@@ -647,9 +686,9 @@ function RecommendationsPanel({ data, loading }: { data: any[] | undefined; load
         return (
           <div key={r.id} className="group relative flex flex-col rounded-xl bg-ink-500/5 border border-gold-400/5 p-3 hover:border-gold-400/20 transition-all duration-300">
             <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-ink-900 shadow border border-gold-400/10">
-              {r.cover_url ? (
+              {resolveBookCover(r.cover_url) ? (
                 <img
-                  src={r.cover_url}
+                  src={resolveBookCover(r.cover_url) ?? ""}
                   alt={r.title}
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />

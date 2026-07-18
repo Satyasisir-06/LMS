@@ -45,7 +45,8 @@ export type Hold = {
 export async function checkOutCopy(
   client: SupabaseClient,
   studentId: string,
-  barcode: string
+  barcode: string,
+  dueDate?: string
 ) {
   // 1. Find profile by student_id
   const { data: profile, error: profileError } = await client
@@ -87,10 +88,17 @@ export async function checkOutCopy(
   }
 
   // 4. Create borrowing record. Faculty receive an extended loan period
-  //    (28 days) versus the standard 14-day student loan.
+  //    (28 days) versus the standard 14-day student loan. A librarian may
+  //    override the due date via the Issue form.
   const issueDate = new Date();
-  const dueDate = new Date();
-  dueDate.setDate(issueDate.getDate() + (profile.role === "faculty" ? 28 : 14));
+  let finalDueDate: Date;
+  if (dueDate) {
+    // Parse the chosen calendar day in local time (avoids UTC off-by-one).
+    finalDueDate = new Date(`${dueDate}T00:00:00`);
+  } else {
+    finalDueDate = new Date();
+    finalDueDate.setDate(issueDate.getDate() + (profile.role === "faculty" ? 28 : 14));
+  }
 
   const { data: borrowing, error: borrowError } = await client
     .from("borrowings")
@@ -98,7 +106,7 @@ export async function checkOutCopy(
       user_id: profile.id,
       copy_id: copy.id,
       issue_date: issueDate.toISOString(),
-      due_date: dueDate.toISOString(),
+      due_date: finalDueDate.toISOString(),
       status: "active"
     })
     .select()

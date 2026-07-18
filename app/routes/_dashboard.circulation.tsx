@@ -16,7 +16,8 @@ import {
   ListOrdered,
   X,
   Printer,
-  Camera
+  Camera,
+  CircleDollarSign
 } from "lucide-react";
 import QRCode from "react-qr-code";
 
@@ -28,6 +29,7 @@ import { GlassCard } from "~/components/ui/glass-card";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { getSupabaseBrowserClient } from "~/lib/supabase/client";
+import { useUser } from "~/providers/app-context";
 import {
   checkOutCopy,
   checkInCopy,
@@ -39,6 +41,8 @@ import {
   type Borrowing,
   type Hold
 } from "~/lib/supabase/circulation";
+import { collectFine } from "~/lib/supabase/overdue";
+import { resolveBookCover } from "~/lib/supabase/covers";
 import { QRScanner } from "~/components/ui/qr-scanner";
 import { ErrorState } from "~/components/ui/error-state";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -58,6 +62,7 @@ type TabType = "checkout" | "checkin" | "loans" | "holds";
 export default function Circulation() {
   const supabase = getSupabaseBrowserClient();
   const queryClient = useQueryClient();
+  const user = useUser();
   const toast = useToastStore((s) => s.push);
 
   const { origin } = useLoaderData<typeof loader>();
@@ -72,6 +77,7 @@ export default function Circulation() {
   // checkout form state
   const [checkoutStudentId, setCheckoutStudentId] = useState("");
   const [checkoutBarcode, setCheckoutBarcode] = useState("");
+  const [checkoutDueDate, setCheckoutDueDate] = useState("");
   const [checkoutSuccess, setCheckoutSuccess] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
@@ -80,7 +86,9 @@ export default function Circulation() {
   const [checkinSuccess, setCheckinSuccess] = useState<{
     msg: string;
     fine?: number;
+    borrowingId?: string;
     nextStatus?: string;
+    paid?: boolean;
   } | null>(null);
   const [checkinError, setCheckinError] = useState<string | null>(null);
 
@@ -155,14 +163,18 @@ export default function Circulation() {
 
   // Mutations
   const checkoutMutation = useMutation({
-    mutationFn: ({ studentId, barcode }: { studentId: string; barcode: string }) =>
-      checkOutCopy(supabase, studentId, barcode),
-    onSuccess: () => {
+    mutationFn: ({ studentId, barcode, dueDate }: { studentId: string; barcode: string; dueDate?: string }) =>
+      checkOutCopy(supabase, studentId, barcode, dueDate),
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["activeLoans"] });
       queryClient.invalidateQueries({ queryKey: ["books"] });
-      setCheckoutSuccess(`Successfully checked out barcode "${checkoutBarcode}" to student "${checkoutStudentId}".`);
+      const due = data.due_date ? new Date(data.due_date).toLocaleDateString() : "—";
+      setCheckoutSuccess(
+        `Issued barcode "${checkoutBarcode}" to "${checkoutStudentId}". Due ${due}.`,
+      );
       setCheckoutError(null);
       setCheckoutBarcode("");
+      setCheckoutDueDate("");
     },
     onError: (err: any) => {
       setCheckoutError(err.message || "Checkout failed.");
@@ -179,6 +191,7 @@ export default function Circulation() {
       setCheckinSuccess({
         msg: `Barcode "${checkinBarcode}" successfully checked in.`,
         fine: data.fineAmount,
+        borrowingId: data.borrowingId,
         nextStatus: data.nextStatus
       });
       setCheckinError(null);
@@ -188,6 +201,27 @@ export default function Circulation() {
       setCheckinError(err.message || "Check-in failed.");
       setCheckinSuccess(null);
     }
+  });
+
+  // Collect a cash payment at the desk for the fine on a just-returned book.
+  const payCashMutation = useMutation({
+    mutationFn: () =>
+      collectFine(
+        supabase,
+        checkinSuccess!.borrowingId!,
+        checkinSuccess!.fine ?? 0,
+        "cash",
+        user.id,
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["activeLoans"] });
+      queryClient.invalidateQueries({ queryKey: ["allHolds"] });
+      setCheckinSuccess((s) => (s ? { ...s, fine: 0, paid: true } : s));
+      toast("Cash payment recorded. Fine cleared.", "success");
+    },
+    onError: (err: any) => {
+      setCheckinError(err.message || "Cash payment failed.");
+    },
   });
 
   const renewMutation = useMutation({
@@ -204,7 +238,11 @@ export default function Circulation() {
   const handleCheckoutSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!checkoutStudentId || !checkoutBarcode) return;
-    checkoutMutation.mutate({ studentId: checkoutStudentId, barcode: checkoutBarcode });
+    checkoutMutation.mutate({
+      studentId: checkoutStudentId,
+      barcode: checkoutBarcode,
+      dueDate: checkoutDueDate || undefined,
+    });
   };
 
   const handleCheckinSubmit = (e: React.FormEvent) => {
@@ -425,6 +463,22 @@ export default function Circulation() {
                   </div>
                 </div>
 
+                <div>
+                  <label className="block text-xs font-bold text-mist uppercase tracking-wider mb-2">
+                    Due Date (optional)
+                  </label>
+                  <input
+                    type="date"
+                    min={new Date().toISOString().slice(0, 10)}
+                    value={checkoutDueDate}
+                    onChange={(e) => setCheckoutDueDate(e.target.value)}
+                    className="h-11 w-full rounded-xl border border-gold-400/15 bg-gold-400/5 px-3 text-sm text-ink-800 outline-none focus:border-gold-400/40 dark:bg-ink-950/40 dark:text-ivory"
+                  />
+                  <p className="mt-1 text-xs text-mist">
+                    Defaults to 14 days (faculty 28) if left blank.
+                  </p>
+                </div>
+
                 {checkoutSuccess && (
                   <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs flex gap-2 items-center">
                     <CheckCircle2 className="size-4 shrink-0" />
@@ -497,6 +551,28 @@ export default function Circulation() {
                     </div>
                     <div className="pl-6 space-y-1">
                       <p>Overdue Fines: <strong className="text-ink-800 dark:text-ivory">${checkinSuccess.fine?.toFixed(2)}</strong></p>
+                      {checkinSuccess.fine && checkinSuccess.fine > 0 ? (
+                        checkinSuccess.paid ? (
+                          <p className="font-semibold text-emerald-600 dark:text-emerald-400">
+                            Paid in cash — fine cleared.
+                          </p>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            className="mt-1 gap-2"
+                            isLoading={payCashMutation.isPending}
+                            onClick={() => payCashMutation.mutate()}
+                          >
+                            <CircleDollarSign className="size-4" />
+                            Pay by Cash
+                          </Button>
+                        )
+                      ) : (
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                          No outstanding fine.
+                        </p>
+                      )}
                       <p>Copy status updated to: <Badge variant={checkinSuccess.nextStatus === "reserved" ? "gold" : "success"}>{checkinSuccess.nextStatus?.toUpperCase()}</Badge></p>
                       {checkinSuccess.nextStatus === "reserved" && (
                         <p className="text-gold-600 dark:text-gold-400 font-bold mt-1">This book copy is reserved for the next pending hold user!</p>
@@ -625,17 +701,21 @@ export default function Circulation() {
                           </td>
                           <td className="p-4">
                             <div className="flex items-center gap-3">
-                              {loan.copy?.books?.cover_url ? (
-                                <img
-                                  src={loan.copy.books.cover_url}
-                                  alt={loan.copy.books.title}
-                                  className="w-10 h-14 rounded object-cover border border-gold-400/10 shadow"
-                                />
-                              ) : (
-                                <div className="w-10 h-14 bg-ink-900 border border-gold-400/10 flex items-center justify-center rounded">
-                                  <BookOpen className="size-4 text-gold-500/40" />
-                                </div>
-                              )}
+                              {(() => {
+                                const cover = resolveBookCover(loan.copy?.books?.cover_url);
+                                const title = loan.copy?.books?.title ?? "book";
+                                return cover ? (
+                                  <img
+                                    src={cover}
+                                    alt={title}
+                                    className="w-10 h-14 rounded object-cover border border-gold-400/10 shadow"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-14 bg-ink-900 border border-gold-400/10 flex items-center justify-center rounded">
+                                    <BookOpen className="size-4 text-gold-500/40" />
+                                  </div>
+                                );
+                              })()}
                               <span className="font-serif font-bold text-sm leading-tight text-ink-800 dark:text-ivory max-w-[200px] line-clamp-2">
                                 {loan.copy?.books?.title}
                               </span>
@@ -749,17 +829,21 @@ export default function Circulation() {
                       <tr key={hold.id} className="hover:bg-gold-400/5 transition-colors">
                         <td className="p-4">
                           <div className="flex items-center gap-3">
-                            {hold.book?.cover_url ? (
-                              <img
-                                src={hold.book.cover_url}
-                                alt={hold.book.title}
-                                className="w-8 h-12 rounded object-cover border border-gold-400/10 shadow"
-                              />
-                            ) : (
-                              <div className="w-8 h-12 bg-ink-900 border border-gold-400/10 flex items-center justify-center rounded">
-                                <BookOpen className="size-3.5 text-gold-500/40" />
-                              </div>
-                            )}
+                            {(() => {
+                              const cover = resolveBookCover(hold.book?.cover_url);
+                              const title = hold.book?.title ?? "book";
+                              return cover ? (
+                                <img
+                                  src={cover}
+                                  alt={title}
+                                  className="w-8 h-12 rounded object-cover border border-gold-400/10 shadow"
+                                />
+                              ) : (
+                                <div className="w-8 h-12 bg-ink-900 border border-gold-400/10 flex items-center justify-center rounded">
+                                  <BookOpen className="size-4 text-gold-500/40" />
+                                </div>
+                              );
+                            })()}
                             <span className="font-serif font-bold text-sm leading-tight text-ink-800 dark:text-ivory max-w-[250px] line-clamp-2">
                               {hold.book?.title}
                             </span>

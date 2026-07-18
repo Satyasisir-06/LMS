@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -27,6 +27,7 @@ import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { TextField } from "~/components/ui/text-field";
 import { getSupabaseBrowserClient } from "~/lib/supabase/client";
+import { resolveBookCover, uploadBookCover } from "~/lib/supabase/covers";
 import {
   getBooks,
   getCategories,
@@ -546,8 +547,8 @@ function BooksTab({
             {books.map((book: any) => (
               <GlassCard key={book.id} className="flex gap-3 p-4 border border-gold-400/20">
                 <div className="relative w-14 aspect-[2/3] shrink-0 overflow-hidden rounded-lg bg-ink-800 border border-parchment-300 dark:border-ink-700">
-                  {book.cover_url ? (
-                    <img src={book.cover_url} alt={book.title} className="h-full w-full object-cover" />
+                  {resolveBookCover(book.cover_url) ? (
+                    <img src={resolveBookCover(book.cover_url) ?? ""} alt={book.title} className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-ink-700 to-ink-900">
                       <BookMarked className="size-5 text-gold-400/40" />
@@ -608,6 +609,24 @@ function BookForm({
   const [authorIds, setAuthorIds] = useState<string[]>([]);
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const handleCoverFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const path = await uploadBookCover(supabase, file);
+      set("cover_url", path);
+    } catch (err: any) {
+      setUploadError(err.message || "Failed to upload cover.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const set = (key: keyof typeof form, value: string) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -679,12 +698,60 @@ function BookForm({
           <TextField label="Language" value={form.language} onChange={(e) => set("language", e.target.value)} />
           <TextField label="Edition" value={form.edition} onChange={(e) => set("edition", e.target.value)} />
           <div className="sm:col-span-2">
-            <TextField
-              label="Cover URL"
-              value={form.cover_url}
-              onChange={(e) => set("cover_url", e.target.value)}
-              placeholder="https://…"
-            />
+            <label className="block text-xs font-medium uppercase tracking-[0.12em] text-mist">
+              Cover
+            </label>
+            <div className="mt-1.5 flex items-start gap-4">
+              <div className="relative aspect-[2/3] w-16 shrink-0 overflow-hidden rounded-lg bg-ink-900 border border-gold-400/10">
+                {resolveBookCover(form.cover_url) ? (
+                  <img
+                    src={resolveBookCover(form.cover_url) ?? ""}
+                    alt="Cover preview"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="grid h-full w-full place-items-center">
+                    <Upload className="size-5 text-gold-400/40" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 space-y-2">
+                <TextField
+                  label="Cover URL"
+                  value={form.cover_url}
+                  onChange={(e) => set("cover_url", e.target.value)}
+                  placeholder="https://… or storage path"
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    id="cover-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleCoverFile}
+                  />
+                  <label
+                    htmlFor="cover-upload"
+                    className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gold-400/20 bg-ink-950/5 px-3 py-2 text-sm font-medium text-ink-800 transition-colors hover:border-gold-400/50 hover:bg-gold-400/10 dark:bg-ink-950/40 dark:text-ink-100"
+                  >
+                    <Upload className="size-4" />
+                    {uploading ? "Uploading…" : "Upload image"}
+                  </label>
+                  {form.cover_url && (
+                    <button
+                      type="button"
+                      onClick={() => set("cover_url", "")}
+                      className="rounded-xl px-3 py-2 text-sm text-mist underline-offset-2 hover:text-red-500 hover:underline"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                {uploadError && (
+                  <p className="text-xs text-red-500">{uploadError}</p>
+                )}
+              </div>
+            </div>
           </div>
           <div className="sm:col-span-2">
             <label className="block text-xs font-medium uppercase tracking-[0.12em] text-mist">

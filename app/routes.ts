@@ -24,4 +24,7 @@ export default [
 
   // Sign-out (POST)
   route("logout", "routes/logout.tsx"),
+
+  // TEMP verification route
+  route("gooey-check", "routes/gooey-check.tsx"),
 ] satisfies RouteConfig;

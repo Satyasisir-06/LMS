@@ -12,6 +12,7 @@ import { Badge } from "~/components/ui/badge";
 import { staggerContainer, fadeUp, viewportOnce } from "~/components/motion/presets";
 import { getSupabaseBrowserClient } from "~/lib/supabase/client";
 import { getBooks, getCategories, getBranches, placeHold, getUserHolds, type Book } from "~/lib/supabase/catalog";
+import { resolveBookCover } from "~/lib/supabase/covers";
 import { getWishlistBookIds, addToWishlist, removeFromWishlist, getEbook, getEbookSignedUrl } from "~/lib/supabase/library";
 import { useUser } from "~/providers/app-context";
 import { ErrorState } from "~/components/ui/error-state";
@@ -312,9 +313,9 @@ export default function Catalog() {
                   <div className="flex gap-4 items-start">
                     {/* Cover Preview */}
                     <div className="relative w-20 aspect-[2/3] shrink-0 overflow-hidden rounded-lg bg-ink-800 shadow-lg border border-parchment-300 dark:border-ink-700">
-                      {book.cover_url ? (
+                      {resolveBookCover(book.cover_url) ? (
                         <img
-                          src={book.cover_url}
+                          src={resolveBookCover(book.cover_url) ?? ""}
                           alt={book.title}
                           className="h-full w-full object-cover"
                         />
@@ -425,9 +426,9 @@ export default function Catalog() {
                 {/* Header Information */}
                 <div className="flex flex-col sm:flex-row gap-6">
                   <div className="relative w-32 aspect-[2/3] shrink-0 mx-auto sm:mx-0 overflow-hidden rounded-xl bg-ink-800 shadow-2xl border border-parchment-300 dark:border-ink-700">
-                    {selectedBook.cover_url ? (
+                    {resolveBookCover(selectedBook.cover_url) ? (
                       <img
-                        src={selectedBook.cover_url}
+                        src={resolveBookCover(selectedBook.cover_url) ?? ""}
                         alt={selectedBook.title}
                         className="h-full w-full object-cover"
                       />

@@ -665,6 +665,15 @@ function FineModal({
       >
         <CircleDollarSign className="size-4" /> Collect &amp; Generate Receipt
       </Button>
+      <Button
+        variant="outline"
+        className="mt-2 w-full gap-2"
+        isLoading={isPending}
+        disabled={!row || Number(row.fine_amount) <= 0}
+        onClick={() => onCollect(Number(row?.fine_amount ?? 0), "cash")}
+      >
+        <CircleDollarSign className="size-4" /> Pay Full in Cash
+      </Button>
     </ModalShell>
   );
 }

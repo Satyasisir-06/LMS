@@ -50,7 +50,7 @@ const BOOKS = [
     language: 'English',
     edition: 'Classic Edition',
     publication_year: 2003,
-    cover_url: '/cover-1.webp',
+    cover_url: 'cover-1.jpg',
     author: 'Jane Austen',
     category: 'Classics'
   },
@@ -62,7 +62,7 @@ const BOOKS = [
     language: 'English',
     edition: 'Reprint Edition',
     publication_year: 1994,
-    cover_url: '/cover-2.webp',
+    cover_url: 'cover-2.jpg',
     author: 'Umberto Eco',
     category: 'Mystery'
   },
@@ -74,7 +74,7 @@ const BOOKS = [
     language: 'English',
     edition: 'First Edition',
     publication_year: 2000,
-    cover_url: '/cover-3.webp',
+    cover_url: 'cover-3.jpg',
     author: 'Haruki Murakami',
     category: 'Fiction'
   },
@@ -86,7 +86,7 @@ const BOOKS = [
     language: 'English',
     edition: 'First Edition',
     publication_year: 2019,
-    cover_url: '/cover-4.webp',
+    cover_url: 'cover-4.jpg',
     author: 'Alex Michaelides',
     category: 'Thriller'
   },
@@ -98,7 +98,7 @@ const BOOKS = [
     language: 'English',
     edition: 'Illustrated Edition',
     publication_year: 2015,
-    cover_url: '/cover-5.webp',
+    cover_url: 'cover-5.jpg',
     author: 'Yuval Noah Harari',
     category: 'Non-fiction'
   },
@@ -110,7 +110,7 @@ const BOOKS = [
     language: 'English',
     edition: 'First Edition',
     publication_year: 2013,
-    cover_url: '/cover-6.webp',
+    cover_url: 'cover-6.jpg',
     author: 'Donna Tartt',
     category: 'Fiction'
   },
@@ -122,7 +122,7 @@ const BOOKS = [
     language: 'English',
     edition: 'Reprint Edition',
     publication_year: 2004,
-    cover_url: '/cover-7.webp',
+    cover_url: 'cover-7.jpg',
     author: 'F. Scott Fitzgerald',
     category: 'Classics'
   },
@@ -134,7 +134,7 @@ const BOOKS = [
     language: 'English',
     edition: 'Revised Edition',
     publication_year: 2003,
-    cover_url: '/cover-8.webp',
+    cover_url: 'cover-8.jpg',
     author: 'Fyodor Dostoevsky',
     category: 'Classics'
   }
@@ -246,3 +246,4 @@ async function seed() {
 }
 
 seed();
+

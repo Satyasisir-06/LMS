@@ -218,7 +218,7 @@ declare
   v_id     uuid;
 begin
   select user_id into v_user from borrowings where id = p_borrowing_id;
-  select currency into v_cur from fine_settings where id = 1;
+  select fine_settings.currency into v_cur from fine_settings where id = 1;
   v_receipt := 'FR-' || to_char(now(), 'YYYYMMDD') || '-' || substr(p_borrowing_id::text, 1, 6);
 
   insert into fine_payments (borrowing_id, user_id, amount, currency, method, receipt_no, collected_by)

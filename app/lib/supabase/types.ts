@@ -32,6 +32,8 @@ export type Profile = {
   department: string | null;
   phone: string | null;
   student_id: string | null;
+  academic_year: number | null;
+  semester: string | null;
   created_at: string;
 };
 
