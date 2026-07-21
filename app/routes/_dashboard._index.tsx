@@ -131,8 +131,8 @@ export default function DashboardIndex() {
                     className="flex h-full items-center gap-4 p-4 border border-gold-400/20"
                   >
                     <div className="relative w-12 aspect-[2/3] shrink-0 overflow-hidden rounded-lg bg-ink-800 border border-parchment-300 dark:border-ink-700">
-                      {resolveBookCover(book.cover_url) ? (
-                        <img src={resolveBookCover(book.cover_url) ?? ""} alt={book.title} className="h-full w-full object-cover" />
+                      {resolveBookCover(book.cover_url, book.title) ? (
+                        <img src={resolveBookCover(book.cover_url, book.title) ?? ""} alt={book.title} className="h-full w-full object-cover" />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-ink-700 to-ink-900">
                           <BookOpen className="size-4 text-gold-400/40" />

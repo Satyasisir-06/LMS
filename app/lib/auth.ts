@@ -6,10 +6,20 @@ import { hasRole, type AuthUser, type Profile, type UserRole } from "./supabase/
  * Resolves the authenticated user + profile for an incoming request.
  * Returns the accumulated Set-Cookie headers so callers can forward
  * any token-refresh mutations onto their response.
+ * 
+ * Optimized: Bypasses network calls for unauthenticated requests with no auth cookie.
  */
 export async function getAuthUser(
   request: Request,
 ): Promise<{ user: AuthUser | null; headers: Headers }> {
+  const cookieHeader = request.headers.get("Cookie") ?? "";
+
+  // Fast path: if no cookie is sent or no Supabase auth token cookie exists, return null immediately.
+  // Avoids a 200-500ms network roundtrip to Supabase auth API on every public page load.
+  if (!cookieHeader || (!cookieHeader.includes("sb-") && !cookieHeader.includes("token"))) {
+    return { user: null, headers: new Headers() };
+  }
+
   const { client, headers } = createSupabaseServerClient(request);
 
   let user: Awaited<ReturnType<typeof client.auth.getUser>>["data"]["user"];

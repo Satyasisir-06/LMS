@@ -38,7 +38,26 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
   const navRef = useRef<HTMLUListElement>(null);
   const filterRef = useRef<HTMLSpanElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
-  const [activeIndex, setActiveIndex] = useState<number>(initialActiveIndex);
+  const isInitialMount = useRef(true);
+
+  // Synchronously compute current active index based on activeHref
+  const computedIndex = activeHref != null
+    ? items.findIndex((i) => i.href === activeHref)
+    : initialActiveIndex;
+  const initialIdx = computedIndex >= 0 ? computedIndex : initialActiveIndex;
+
+  const [activeIndex, setActiveIndex] = useState<number>(initialIdx);
+  const [prevActiveHref, setPrevActiveHref] = useState<string | undefined>(activeHref);
+
+  // Synchronize state with prop during render to avoid 1-frame layout delay
+  if (activeHref !== prevActiveHref) {
+    setPrevActiveHref(activeHref);
+    const newIdx = activeHref != null ? items.findIndex((i) => i.href === activeHref) : -1;
+    if (newIdx >= 0 && newIdx !== activeIndex) {
+      setActiveIndex(newIdx);
+      isInitialMount.current = true; // Skip sliding animation on route transition
+    }
+  }
 
   const noise = (n = 1) => n / 2 - Math.random() * n;
   const getXY = (
@@ -104,7 +123,8 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
       }, 30);
     }
   };
-  const updateEffectPosition = (element: HTMLElement) => {
+
+  const updateEffectPosition = (element: HTMLElement, immediate = false) => {
     if (!containerRef.current || !filterRef.current) return;
     const containerRect = containerRef.current.getBoundingClientRect();
     const pos = element.getBoundingClientRect();
@@ -114,12 +134,28 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
       width: `${pos.width}px`,
       height: `${pos.height}px`,
     };
+
+    if (immediate) {
+      filterRef.current.style.transition = "none";
+      if (textRef.current) textRef.current.style.transition = "none";
+    }
+
     Object.assign(filterRef.current.style, styles);
     if (textRef.current) {
       Object.assign(textRef.current.style, styles);
       textRef.current.innerText = element.innerText;
     }
+
+    if (immediate) {
+      // Force reflow to snap instantly without slide transition
+      void filterRef.current.offsetHeight;
+      requestAnimationFrame(() => {
+        if (filterRef.current) filterRef.current.style.transition = "";
+        if (textRef.current) textRef.current.style.transition = "";
+      });
+    }
   };
+
   const handleClick = (
     e: React.MouseEvent<HTMLAnchorElement>,
     index: number,
@@ -129,13 +165,12 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
       onNavigate?.(items[index].href, index);
       return;
     }
+    isInitialMount.current = false;
     setActiveIndex(index);
 
-    // Look up the actual <li> by index — e.currentTarget is the <a>,
-    // which can misalign the effect position.
     const targetLi = navRef.current?.querySelectorAll("li")[index] as HTMLElement | undefined;
     if (targetLi) {
-      updateEffectPosition(targetLi);
+      updateEffectPosition(targetLi, false);
     }
 
     if (filterRef.current) {
@@ -151,9 +186,9 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
       makeParticles(filterRef.current);
     }
 
-    // Navigate AFTER particles are queued so the effect plays at the right spot.
     onNavigate?.(items[index].href, index);
   };
+
   const handleKeyDown = (
     e: React.KeyboardEvent<HTMLAnchorElement>,
     index: number,
@@ -172,23 +207,16 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
     }
   };
 
-  // Keep the highlighted pill in sync with an external route (e.g. navigation
-  // performed from somewhere else, like the sidebar on tablet).
-  useEffect(() => {
-    if (activeHref == null) return;
-    const idx = items.findIndex((i) => i.href === activeHref);
-    if (idx >= 0 && idx !== activeIndex) {
-      setActiveIndex(idx);
-    }
-  }, [activeHref, items, activeIndex]);
-
   useEffect(() => {
     if (!navRef.current || !containerRef.current) return;
     const activeLi = navRef.current.querySelectorAll("li")[
       activeIndex
     ] as HTMLElement;
     if (activeLi) {
-      updateEffectPosition(activeLi);
+      updateEffectPosition(activeLi, isInitialMount.current);
+      if (isInitialMount.current) {
+        isInitialMount.current = false;
+      }
       textRef.current?.classList.add("active");
     }
     const resizeObserver = new ResizeObserver(() => {
@@ -196,7 +224,7 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
         activeIndex
       ] as HTMLElement;
       if (currentActiveLi) {
-        updateEffectPosition(currentActiveLi);
+        updateEffectPosition(currentActiveLi, true);
       }
     });
     resizeObserver.observe(containerRef.current);
@@ -205,7 +233,6 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
 
   return (
     <>
-      {/* Scoped under .gooey-nav to avoid leaking global rules. */}
       <style>
         {`
           .gooey-nav {
@@ -222,6 +249,7 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             display: grid;
             place-items: center;
             z-index: 1;
+            transition: left 0.3s ease, top 0.3s ease, width 0.3s ease, height 0.3s ease;
           }
           .gooey-nav .effect.text {
             color: white;
@@ -391,7 +419,6 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
         <span className="effect text" ref={textRef} />
       </div>
 
-      {/* SVG gooey filter — no black background needed */}
       <svg className="absolute h-0 w-0" aria-hidden="true" focusable="false">
         <defs>
           <filter id="gooey-filter">

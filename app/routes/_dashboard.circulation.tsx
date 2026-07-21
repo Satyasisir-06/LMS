@@ -702,12 +702,14 @@ export default function Circulation() {
                           <td className="p-4">
                             <div className="flex items-center gap-3">
                               {(() => {
-                                const cover = resolveBookCover(loan.copy?.books?.cover_url);
                                 const title = loan.copy?.books?.title ?? "book";
+                                const cover = resolveBookCover(loan.copy?.books?.cover_url, title);
                                 return cover ? (
                                   <img
                                     src={cover}
                                     alt={title}
+                                    decoding="async"
+                                    loading="lazy"
                                     className="w-10 h-14 rounded object-cover border border-gold-400/10 shadow"
                                   />
                                 ) : (
@@ -830,12 +832,14 @@ export default function Circulation() {
                         <td className="p-4">
                           <div className="flex items-center gap-3">
                             {(() => {
-                              const cover = resolveBookCover(hold.book?.cover_url);
                               const title = hold.book?.title ?? "book";
+                              const cover = resolveBookCover(hold.book?.cover_url, title);
                               return cover ? (
                                 <img
                                   src={cover}
                                   alt={title}
+                                  decoding="async"
+                                  loading="lazy"
                                   className="w-8 h-12 rounded object-cover border border-gold-400/10 shadow"
                                 />
                               ) : (

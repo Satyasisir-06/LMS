@@ -208,56 +208,59 @@ function BranchesTab({
   });
 
   return (
-    <div className="grid gap-8 lg:grid-cols-2">
-      <GlassCard className="p-6 border border-gold-400/20">
-        <h3 className="font-serif text-lg font-bold text-ink-800 dark:text-ivory mb-4">
-          Add Branch
-        </h3>
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!name || !location) return;
-            mutation.mutate();
-          }}
-        >
-          <TextField
-            label="Branch name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Main Library"
-          />
-          <TextField
-            label="Location"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="e.g. Central Campus"
-          />
-          {error && (
-            <p className="flex items-center gap-1.5 text-xs text-red-500">
-              <AlertTriangle className="size-3.5 shrink-0" />
-              {error}
-            </p>
-          )}
-          <Button type="submit" className="w-full" isLoading={mutation.isPending}>
+    <div className="grid gap-8 lg:grid-cols-12 items-start">
+      <div className="lg:col-span-5 lg:sticky lg:top-24">
+        <GlassCard className="p-6 border border-gold-400/20 shadow-sm">
+          <h3 className="font-serif text-lg font-bold text-ink-800 dark:text-ivory mb-4">
             Add Branch
-          </Button>
-        </form>
-      </GlassCard>
+          </h3>
+          <form
+            className="space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!name || !location) return;
+              mutation.mutate();
+            }}
+          >
+            <TextField
+              label="Branch name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Main Library"
+            />
+            <TextField
+              label="Location"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="e.g. Central Campus"
+            />
+            {error && (
+              <p className="flex items-center gap-1.5 text-xs text-red-500">
+                <AlertTriangle className="size-3.5 shrink-0" />
+                {error}
+              </p>
+            )}
+            <Button type="submit" className="w-full" isLoading={mutation.isPending}>
+              Add Branch
+            </Button>
+          </form>
+        </GlassCard>
+      </div>
 
-      <div>
-        <h3 className="mb-3 font-serif text-sm font-bold text-ink-800 dark:text-ivory uppercase tracking-wider">
-          Existing Branches
+      <div className="lg:col-span-7">
+        <h3 className="mb-4 font-serif text-sm font-bold text-ink-800 dark:text-ivory uppercase tracking-wider flex items-center gap-2">
+          <span>Existing Branches</span>
+          <Badge variant="gold">{branches.length}</Badge>
         </h3>
         {isLoading ? (
           <Loader />
         ) : branches.length === 0 ? (
           <EmptyNote>No branches yet.</EmptyNote>
         ) : (
-          <div className="grid gap-3">
+          <div className="max-h-[580px] overflow-y-auto pr-1 grid gap-3">
             {branches.map((b: any) => (
-              <GlassCard key={b.id} className="flex items-center gap-3 p-4 border border-gold-400/20">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gold-400/10">
+              <GlassCard key={b.id} className="flex items-center gap-4 p-4 border border-gold-400/20 hover:border-gold-400/40 transition-colors">
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gold-400/10">
                   <Building2 className="size-5 text-gold-500" />
                 </div>
                 <div>
@@ -288,6 +291,7 @@ function CategoriesTab({
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const mutation = useMutation({
@@ -301,56 +305,76 @@ function CategoriesTab({
     onError: (err: any) => setError(err.message || "Failed to add category."),
   });
 
-  return (
-    <div className="grid gap-8 lg:grid-cols-2">
-      <GlassCard className="p-6 border border-gold-400/20">
-        <h3 className="font-serif text-lg font-bold text-ink-800 dark:text-ivory mb-4">
-          Add Category
-        </h3>
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!name) return;
-            mutation.mutate();
-          }}
-        >
-          <TextField
-            label="Category name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Fiction"
-          />
-          <TextField
-            label="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Optional"
-          />
-          {error && (
-            <p className="flex items-center gap-1.5 text-xs text-red-500">
-              <AlertTriangle className="size-3.5 shrink-0" />
-              {error}
-            </p>
-          )}
-          <Button type="submit" className="w-full" isLoading={mutation.isPending}>
-            Add Category
-          </Button>
-        </form>
-      </GlassCard>
+  const filteredCategories = categories.filter((c: any) =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    (c.description && c.description.toLowerCase().includes(search.toLowerCase()))
+  );
 
-      <div>
-        <h3 className="mb-3 font-serif text-sm font-bold text-ink-800 dark:text-ivory uppercase tracking-wider">
-          Existing Categories
-        </h3>
+  return (
+    <div className="grid gap-8 lg:grid-cols-12 items-start">
+      <div className="lg:col-span-5 lg:sticky lg:top-24">
+        <GlassCard className="p-6 border border-gold-400/20 shadow-sm">
+          <h3 className="font-serif text-lg font-bold text-ink-800 dark:text-ivory mb-4">
+            Add Category
+          </h3>
+          <form
+            className="space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!name) return;
+              mutation.mutate();
+            }}
+          >
+            <TextField
+              label="Category name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Fiction"
+            />
+            <TextField
+              label="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Optional"
+            />
+            {error && (
+              <p className="flex items-center gap-1.5 text-xs text-red-500">
+                <AlertTriangle className="size-3.5 shrink-0" />
+                {error}
+              </p>
+            )}
+            <Button type="submit" className="w-full" isLoading={mutation.isPending}>
+              Add Category
+            </Button>
+          </form>
+        </GlassCard>
+      </div>
+
+      <div className="lg:col-span-7">
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h3 className="font-serif text-sm font-bold text-ink-800 dark:text-ivory uppercase tracking-wider flex items-center gap-2">
+            <span>Existing Categories</span>
+            <Badge variant="gold">{filteredCategories.length}</Badge>
+          </h3>
+          <div className="relative w-full sm:w-64">
+            <input
+              type="text"
+              placeholder="Search categories..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-xl border border-gold-400/20 bg-white/60 px-3.5 py-1.5 text-xs text-ink-800 outline-none focus:border-gold-400/60 dark:bg-ink-900/60 dark:text-ivory placeholder:text-mist"
+            />
+          </div>
+        </div>
+
         {isLoading ? (
           <Loader />
-        ) : categories.length === 0 ? (
-          <EmptyNote>No categories yet.</EmptyNote>
+        ) : filteredCategories.length === 0 ? (
+          <EmptyNote>No categories match your search.</EmptyNote>
         ) : (
-          <div className="flex flex-wrap gap-2">
-            {categories.map((c: any) => (
-              <Badge key={c.id} variant="gold" className="px-3 py-1.5 text-sm">
+          <div className="max-h-[580px] overflow-y-auto pr-1 flex flex-wrap gap-2">
+            {filteredCategories.map((c: any) => (
+              <Badge key={c.id} variant="gold" className="px-3.5 py-2 text-sm border border-gold-400/30">
                 {c.name}
               </Badge>
             ))}
@@ -376,6 +400,7 @@ function AuthorsTab({
 
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
+  const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const mutation = useMutation({
@@ -389,62 +414,82 @@ function AuthorsTab({
     onError: (err: any) => setError(err.message || "Failed to add author."),
   });
 
+  const filteredAuthors = authors.filter((a: any) =>
+    a.name.toLowerCase().includes(search.toLowerCase()) ||
+    (a.bio && a.bio.toLowerCase().includes(search.toLowerCase()))
+  );
+
   return (
-    <div className="grid gap-8 lg:grid-cols-2">
-      <GlassCard className="p-6 border border-gold-400/20">
-        <h3 className="font-serif text-lg font-bold text-ink-800 dark:text-ivory mb-4">
-          Add Author
-        </h3>
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!name) return;
-            mutation.mutate();
-          }}
-        >
-          <TextField
-            label="Author name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Jane Austen"
-          />
-          <div className="space-y-1.5">
-            <label className="block text-xs font-medium uppercase tracking-[0.12em] text-mist">
-              Biography
-            </label>
-            <textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              rows={4}
-              placeholder="Optional"
-              className="w-full rounded-xl border border-gold-400/15 bg-ink-950/5 px-3.5 py-2.5 text-sm text-ink-800 transition-all placeholder:text-mist/60 focus:border-gold-400/50 focus:ring-2 focus:ring-gold-400/25 focus:outline-none dark:bg-ink-950/40 dark:text-ink-100"
+    <div className="grid gap-8 lg:grid-cols-12 items-start">
+      <div className="lg:col-span-5 lg:sticky lg:top-24">
+        <GlassCard className="p-6 border border-gold-400/20 shadow-sm">
+          <h3 className="font-serif text-lg font-bold text-ink-800 dark:text-ivory mb-4">
+            Add Author
+          </h3>
+          <form
+            className="space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!name) return;
+              mutation.mutate();
+            }}
+          >
+            <TextField
+              label="Author name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Jane Austen"
+            />
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium uppercase tracking-[0.12em] text-mist">
+                Biography
+              </label>
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                rows={4}
+                placeholder="Optional"
+                className="w-full rounded-xl border border-gold-400/15 bg-ink-950/5 px-3.5 py-2.5 text-sm text-ink-800 transition-all placeholder:text-mist/60 focus:border-gold-400/50 focus:ring-2 focus:ring-gold-400/25 focus:outline-none dark:bg-ink-950/40 dark:text-ink-100"
+              />
+            </div>
+            {error && (
+              <p className="flex items-center gap-1.5 text-xs text-red-500">
+                <AlertTriangle className="size-3.5 shrink-0" />
+                {error}
+              </p>
+            )}
+            <Button type="submit" className="w-full" isLoading={mutation.isPending}>
+              Add Author
+            </Button>
+          </form>
+        </GlassCard>
+      </div>
+
+      <div className="lg:col-span-7">
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h3 className="font-serif text-sm font-bold text-ink-800 dark:text-ivory uppercase tracking-wider flex items-center gap-2">
+            <span>Existing Authors</span>
+            <Badge variant="gold">{filteredAuthors.length}</Badge>
+          </h3>
+          <div className="relative w-full sm:w-64">
+            <input
+              type="text"
+              placeholder="Search authors..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-xl border border-gold-400/20 bg-white/60 px-3.5 py-1.5 text-xs text-ink-800 outline-none focus:border-gold-400/60 dark:bg-ink-900/60 dark:text-ivory placeholder:text-mist"
             />
           </div>
-          {error && (
-            <p className="flex items-center gap-1.5 text-xs text-red-500">
-              <AlertTriangle className="size-3.5 shrink-0" />
-              {error}
-            </p>
-          )}
-          <Button type="submit" className="w-full" isLoading={mutation.isPending}>
-            Add Author
-          </Button>
-        </form>
-      </GlassCard>
+        </div>
 
-      <div>
-        <h3 className="mb-3 font-serif text-sm font-bold text-ink-800 dark:text-ivory uppercase tracking-wider">
-          Existing Authors
-        </h3>
         {isLoading ? (
           <Loader />
-        ) : authors.length === 0 ? (
-          <EmptyNote>No authors yet.</EmptyNote>
+        ) : filteredAuthors.length === 0 ? (
+          <EmptyNote>No authors match your search.</EmptyNote>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {authors.map((a: any) => (
-              <GlassCard key={a.id} className="p-4 border border-gold-400/20">
+          <div className="max-h-[580px] overflow-y-auto pr-1 grid gap-3 sm:grid-cols-2">
+            {filteredAuthors.map((a: any) => (
+              <GlassCard key={a.id} className="p-4 border border-gold-400/20 hover:border-gold-400/40 transition-colors">
                 <p className="font-medium text-ink-800 dark:text-ivory">{a.name}</p>
                 {a.bio && <p className="mt-1 line-clamp-2 text-xs text-mist">{a.bio}</p>}
               </GlassCard>
@@ -483,34 +528,52 @@ function BooksTab({
 
   const [showBookForm, setShowBookForm] = useState(false);
   const [showCopyForm, setShowCopyForm] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filteredBooks = books.filter((b: any) =>
+    b.title.toLowerCase().includes(search.toLowerCase()) ||
+    b.isbn.toLowerCase().includes(search.toLowerCase()) ||
+    (b.authors && b.authors.some((a: any) => a.name.toLowerCase().includes(search.toLowerCase())))
+  );
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-3">
-        <Button
-          variant={showBookForm ? "primary" : "outline"}
-          size="sm"
-          className="gap-2"
-          onClick={() => {
-            setShowBookForm((v) => !v);
-            setShowCopyForm(false);
-          }}
-        >
-          <BookPlus className="size-4" />
-          Add Book
-        </Button>
-        <Button
-          variant={showCopyForm ? "primary" : "outline"}
-          size="sm"
-          className="gap-2"
-          onClick={() => {
-            setShowCopyForm((v) => !v);
-            setShowBookForm(false);
-          }}
-        >
-          <CopyPlus className="size-4" />
-          Add Copy
-        </Button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-3">
+          <Button
+            variant={showBookForm ? "primary" : "outline"}
+            size="sm"
+            className="gap-2"
+            onClick={() => {
+              setShowBookForm((v) => !v);
+              setShowCopyForm(false);
+            }}
+          >
+            <BookPlus className="size-4" />
+            Add Book
+          </Button>
+          <Button
+            variant={showCopyForm ? "primary" : "outline"}
+            size="sm"
+            className="gap-2"
+            onClick={() => {
+              setShowCopyForm((v) => !v);
+              setShowBookForm(false);
+            }}
+          >
+            <CopyPlus className="size-4" />
+            Add Copy
+          </Button>
+        </div>
+        <div className="relative w-full sm:w-72">
+          <input
+            type="text"
+            placeholder="Filter catalog by title or author..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-xl border border-gold-400/20 bg-white/60 px-3.5 py-1.5 text-xs text-ink-800 outline-none focus:border-gold-400/60 dark:bg-ink-900/60 dark:text-ivory placeholder:text-mist"
+          />
+        </div>
       </div>
 
       <AnimatePresence>
@@ -535,20 +598,21 @@ function BooksTab({
       </AnimatePresence>
 
       <div>
-        <h3 className="mb-3 font-serif text-sm font-bold text-ink-800 dark:text-ivory uppercase tracking-wider">
-          Catalog ({books.length})
+        <h3 className="mb-3 font-serif text-sm font-bold text-ink-800 dark:text-ivory uppercase tracking-wider flex items-center gap-2">
+          <span>Catalog Collection</span>
+          <Badge variant="gold">{filteredBooks.length}</Badge>
         </h3>
         {isLoading ? (
           <Loader />
-        ) : books.length === 0 ? (
-          <EmptyNote>No books yet. Add one above or load demo data.</EmptyNote>
+        ) : filteredBooks.length === 0 ? (
+          <EmptyNote>No books match your filter criteria.</EmptyNote>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {books.map((book: any) => (
-              <GlassCard key={book.id} className="flex gap-3 p-4 border border-gold-400/20">
+          <div className="max-h-[640px] overflow-y-auto pr-1 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredBooks.map((book: any) => (
+              <GlassCard key={book.id} className="flex gap-3 p-4 border border-gold-400/20 hover:border-gold-400/40 transition-colors">
                 <div className="relative w-14 aspect-[2/3] shrink-0 overflow-hidden rounded-lg bg-ink-800 border border-parchment-300 dark:border-ink-700">
-                  {resolveBookCover(book.cover_url) ? (
-                    <img src={resolveBookCover(book.cover_url) ?? ""} alt={book.title} className="h-full w-full object-cover" />
+                  {resolveBookCover(book.cover_url, book.title) ? (
+                    <img src={resolveBookCover(book.cover_url, book.title) ?? ""} alt={book.title} className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-ink-700 to-ink-900">
                       <BookMarked className="size-5 text-gold-400/40" />

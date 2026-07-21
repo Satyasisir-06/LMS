@@ -1,0 +1,15 @@
+{
+  "version": 3,
+  "skills": {
+    "hallmark": {
+      "source": "nutlope/hallmark",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/nutlope/hallmark.git",
+      "skillPath": "skills/hallmark/SKILL.md",
+      "skillFolderHash": "3943c7eb8106e9352f9b164ec81f9bb262d2951b",
+      "installedAt": "2026-07-21T06:00:09.345Z",
+      "updatedAt": "2026-07-21T06:00:09.345Z"
+    }
+  },
+  "dismissed": {}
+}

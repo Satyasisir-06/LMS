@@ -313,10 +313,12 @@ export default function Catalog() {
                   <div className="flex gap-4 items-start">
                     {/* Cover Preview */}
                     <div className="relative w-20 aspect-[2/3] shrink-0 overflow-hidden rounded-lg bg-ink-800 shadow-lg border border-parchment-300 dark:border-ink-700">
-                      {resolveBookCover(book.cover_url) ? (
+                      {resolveBookCover(book.cover_url, book.title) ? (
                         <img
-                          src={resolveBookCover(book.cover_url) ?? ""}
+                          src={resolveBookCover(book.cover_url, book.title) ?? ""}
                           alt={book.title}
+                          decoding="async"
+                          loading="lazy"
                           className="h-full w-full object-cover"
                         />
                       ) : (
@@ -426,10 +428,11 @@ export default function Catalog() {
                 {/* Header Information */}
                 <div className="flex flex-col sm:flex-row gap-6">
                   <div className="relative w-32 aspect-[2/3] shrink-0 mx-auto sm:mx-0 overflow-hidden rounded-xl bg-ink-800 shadow-2xl border border-parchment-300 dark:border-ink-700">
-                    {resolveBookCover(selectedBook.cover_url) ? (
+                    {resolveBookCover(selectedBook.cover_url, selectedBook.title) ? (
                       <img
-                        src={resolveBookCover(selectedBook.cover_url) ?? ""}
+                        src={resolveBookCover(selectedBook.cover_url, selectedBook.title) ?? ""}
                         alt={selectedBook.title}
+                        decoding="async"
                         className="h-full w-full object-cover"
                       />
                     ) : (

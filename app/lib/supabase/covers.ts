@@ -1,37 +1,78 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
- * Book cover resolution.
+ * Book cover resolution helper.
  *
- * `books.cover_url` may hold either an absolute URL (e.g. an Open Library
- * cover) or a path inside the `Books` storage bucket (e.g. `cover-1.jpg`).
- * This helper normalises both into a URL the browser can render.
+ * Normalises all cover forms into distinct, high-speed WebP URLs.
  */
 
 export const BOOK_COVER_BUCKET = "Books";
 
+export const LOCAL_COVERS = [
+  "/cover-1.webp",
+  "/cover-2.webp",
+  "/cover-3.webp",
+  "/cover-4.webp",
+  "/cover-5.webp",
+  "/cover-6.webp",
+  "/cover-7.webp",
+  "/cover-8.webp",
+];
+
+let globalCallCount = 0;
+
+export function getLocalFallbackCover(key?: string | number): string {
+  if (!key) {
+    globalCallCount = (globalCallCount + 1) % LOCAL_COVERS.length;
+    return LOCAL_COVERS[globalCallCount];
+  }
+  if (typeof key === "number") {
+    return LOCAL_COVERS[Math.abs(key) % LOCAL_COVERS.length];
+  }
+  let hash = 0;
+  const str = String(key);
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  const idx = Math.abs(hash) % LOCAL_COVERS.length;
+  return LOCAL_COVERS[idx];
+}
+
 export function resolveBookCover(
   coverUrl: string | null | undefined,
-): string | null {
-  if (!coverUrl) return null;
+  fallbackKey?: string | number,
+): string {
+  if (coverUrl && typeof coverUrl === "string") {
+    const trimmed = coverUrl.trim();
 
-  // Already an absolute URL — use as-is.
-  if (/^https?:\/\//i.test(coverUrl)) return coverUrl;
+    // Check for cover-1 through cover-N in filename or URL
+    const match = trimmed.match(/cover-(\d+)/i);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      const idx = ((num - 1) % LOCAL_COVERS.length + LOCAL_COVERS.length) % LOCAL_COVERS.length;
+      return LOCAL_COVERS[idx];
+    }
 
-  // Storage path — build the public object URL.
-  const base =
-    typeof window !== "undefined" ? window.ENV?.SUPABASE_URL : undefined;
-  if (!base) return coverUrl;
+    // Local static public asset
+    if (trimmed.startsWith("/") || trimmed.startsWith("cover-")) {
+      const formatted = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+      if (formatted.endsWith(".webp")) return formatted;
+    }
 
-  return `${base}/storage/v1/object/public/${BOOK_COVER_BUCKET}/${encodeURIComponent(
-    coverUrl,
-  )}`;
+    // Absolute HTTP/HTTPS URL that isn't openlibrary
+    if (/^https?:\/\//i.test(trimmed) && !trimmed.includes("openlibrary.org")) {
+      return trimmed;
+    }
+  }
+
+  // Fallback: Use fallbackKey or coverUrl string or rotating call index
+  return getLocalFallbackCover(fallbackKey || coverUrl || undefined);
 }
 
 /**
  * Uploads a cover image into the `Books` storage bucket and returns the
- * stored object path (e.g. `uploads/1699...-my-book.jpg`). Store this path in
- * `books.cover_url`; `resolveBookCover` turns it into a public URL.
+ * stored object path.
  */
 export async function uploadBookCover(
   client: SupabaseClient,
