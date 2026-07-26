@@ -13,5 +13,10 @@ export default defineConfig(({ mode }) => {
     resolve: {
       tsconfigPaths: true,
     },
+    build: {
+      rolldownOptions: {
+        external: [/^node:/],
+      },
+    },
   };
 });
