@@ -1,5 +1,4 @@
 import React from "react";
-import type { Config } from "@puckeditor/core";
 import { BookOpen, Sparkles, ArrowRight, ShieldCheck, Clock, Library, CheckCircle2 } from "lucide-react";
 
 export type ComponentProps = {
@@ -48,7 +47,7 @@ export type ComponentProps = {
   };
 };
 
-export const puckConfig: Config<ComponentProps> = {
+export const puckConfig: any = {
   components: {
     Hero: {
       fields: {
