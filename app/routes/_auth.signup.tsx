@@ -1,9 +1,9 @@
 import { useEffect } from "react";
-import { Link, useActionData, data, redirect } from "react-router";
+import { Link, useActionData, data } from "react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import { ArrowRight, GraduationCap, IdCard, Lock, Mail, User } from "lucide-react";
+import { ArrowRight, GraduationCap, IdCard, Lock, Mail, User, CheckCircle2 } from "lucide-react";
 
 import type { Route } from "./+types/_auth.signup";
 import { signupSchema, type SignupInput } from "~/lib/validation";
@@ -13,20 +13,41 @@ import { Button } from "~/components/ui/button";
 import { TextField } from "~/components/ui/text-field";
 import { fadeUp, staggerContainer } from "~/components/motion/presets";
 import { cn } from "~/lib/utils";
+import { checkRateLimit, equalizeTiming } from "~/lib/auth-security";
 
 export async function action({ request }: Route.ActionArgs) {
+  const startTime = Date.now();
   const formData = await request.formData();
   const parsed = signupSchema.safeParse(Object.fromEntries(formData));
 
   if (!parsed.success) {
     return data(
-      { errors: parsed.error.flatten().fieldErrors, error: null },
+      { errors: parsed.error.flatten().fieldErrors, error: null, successMessage: null },
       { status: 400 },
     );
   }
 
-  const { client, headers } = createSupabaseServerClient(request);
-  const { data: signUpData, error } = await client.auth.signUp({
+  // Rate Limiting Check
+  const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
+  const rateLimitKey = `signup:${clientIp}`;
+  const rateCheck = checkRateLimit(rateLimitKey, 3, 15 * 60 * 1000, 30 * 60 * 1000);
+
+  if (!rateCheck.success) {
+    await equalizeTiming(startTime, 400);
+    return data(
+      {
+        error: "Too many signup requests from this connection. Please try again in 30 minutes.",
+        errors: null,
+        successMessage: null,
+      },
+      { status: 429 },
+    );
+  }
+
+  const { client } = createSupabaseServerClient(request);
+  
+  // Register user. Note: email verification requirement is enforced.
+  await client.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
@@ -41,14 +62,15 @@ export async function action({ request }: Route.ActionArgs) {
     },
   });
 
-  if (error) {
-    return data({ error: error.message, errors: null }, { status: 400 });
-  }
+  // Always equalize timing to prevent user enumeration
+  await equalizeTiming(startTime, 400);
 
-  if (signUpData.session) {
-    throw redirect("/", { headers });
-  }
-  throw redirect("/login", { headers });
+  // Anti-enumeration uniform message regardless of email existence status
+  return data({
+    error: null,
+    errors: null,
+    successMessage: "Account request received. Please check your email inbox to verify your email address before logging in.",
+  });
 }
 
 export function meta({}: Route.MetaArgs) {
@@ -95,120 +117,140 @@ export default function Signup() {
         </motion.div>
       )}
 
-      <motion.div variants={fadeUp} className="mt-6">
-        <GlassCard className="p-6 sm:p-7">
-          <form method="post" className="space-y-4" noValidate>
-            <TextField
-              label="Full name"
-              autoComplete="name"
-              placeholder="Jane Austen"
-              icon={User}
-              error={errors.full_name?.message}
-              {...register("full_name")}
-            />
-            <TextField
-              label="Email"
-              type="email"
-              autoComplete="email"
-              placeholder="you@university.edu"
-              icon={Mail}
-              error={errors.email?.message}
-              {...register("email")}
-            />
-            <TextField
-              label="Password"
-              reveal
-              autoComplete="new-password"
-              placeholder="At least 8 characters"
-              icon={Lock}
-              error={errors.password?.message}
-              hint={errors.password ? undefined : "Use 8+ characters."}
-              {...register("password")}
-            />
+      {actionData?.successMessage && (
+        <motion.div
+          variants={fadeUp}
+          className="mt-5 flex items-start gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3.5 text-sm text-emerald-700 dark:text-emerald-300"
+        >
+          <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-500" />
+          <div>
+            <p className="font-medium">{actionData.successMessage}</p>
+            <p className="mt-1 text-xs text-mist">
+              Didn't receive the email? Check your spam folder or return to{" "}
+              <Link to="/login" className="underline hover:text-gold-400">
+                Sign in
+              </Link>.
+            </p>
+          </div>
+        </motion.div>
+      )}
 
-            {/* Role selector */}
-            <div className="space-y-1.5">
-              <span className="block text-xs font-medium uppercase tracking-[0.12em] text-mist">
-                Membership type
-              </span>
-              <div className="grid grid-cols-2 gap-2">
-                {(["student", "faculty"] as const).map((value) => {
-                  const Icon = value === "student" ? GraduationCap : IdCard;
-                  const active = role === value;
-                  return (
-                    <label
-                      key={value}
-                      className={cn(
-                        "flex cursor-pointer items-center gap-2.5 rounded-xl border px-3.5 py-3 text-sm transition-all duration-200",
-                        active
-                          ? "border-gold-400/60 bg-gold-400/12 text-gold-600 dark:text-gold-300"
-                          : "border-gold-400/15 text-ink-500 hover:border-gold-400/35 dark:text-ink-300",
-                      )}
-                    >
-                      <input
-                        type="radio"
-                        value={value}
-                        className="sr-only"
-                        {...register("role")}
-                      />
-                      <Icon className="size-4" />
-                      <span className="font-medium capitalize">{value}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
+      {!actionData?.successMessage && (
+        <motion.div variants={fadeUp} className="mt-6">
+          <GlassCard className="p-6 sm:p-7">
+            <form method="post" className="space-y-4" noValidate>
+              <TextField
+                label="Full name"
+                autoComplete="name"
+                placeholder="Jane Austen"
+                icon={User}
+                error={errors.full_name?.message}
+                {...register("full_name")}
+              />
+              <TextField
+                label="Email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@university.edu"
+                icon={Mail}
+                error={errors.email?.message}
+                {...register("email")}
+              />
+              <TextField
+                label="Password"
+                reveal
+                autoComplete="new-password"
+                placeholder="At least 8 characters"
+                icon={Lock}
+                error={errors.password?.message}
+                hint={errors.password ? undefined : "Use 8+ characters."}
+                {...register("password")}
+              />
 
-            {role === "student" && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                transition={{ duration: 0.25 }}
-                className="overflow-hidden"
-              >
-                <TextField
-                  label="Student ID"
-                  placeholder="e.g. 2026-CS-042"
-                  icon={IdCard}
-                  error={errors.student_id?.message}
-                  {...register("student_id")}
-                />
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                  <TextField
-                    label="Academic Year"
-                    type="number"
-                    placeholder="e.g. 2026"
-                    error={errors.academic_year?.message}
-                    {...register("academic_year")}
-                  />
-                  <TextField
-                    label="Semester"
-                    placeholder="e.g. Fall"
-                    error={errors.semester?.message}
-                    {...register("semester")}
-                  />
+              {/* Role selector */}
+              <div className="space-y-1.5">
+                <span className="block text-xs font-medium uppercase tracking-[0.12em] text-mist">
+                  Membership type
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["student", "faculty"] as const).map((value) => {
+                    const Icon = value === "student" ? GraduationCap : IdCard;
+                    const active = role === value;
+                    return (
+                      <label
+                        key={value}
+                        className={cn(
+                          "flex cursor-pointer items-center gap-2.5 rounded-xl border px-3.5 py-3 text-sm transition-all duration-200",
+                          active
+                            ? "border-gold-400/60 bg-gold-400/12 text-gold-600 dark:text-gold-300"
+                            : "border-gold-400/15 text-ink-500 hover:border-gold-400/35 dark:text-ink-300",
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          value={value}
+                          className="sr-only"
+                          {...register("role")}
+                        />
+                        <Icon className="size-4" />
+                        <span className="font-medium capitalize">{value}</span>
+                      </label>
+                    );
+                  })}
                 </div>
-              </motion.div>
-            )}
+              </div>
 
-            <TextField
-              label="Department (optional)"
-              placeholder="e.g. English Literature"
-              {...register("department")}
-            />
+              {role === "student" && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  transition={{ duration: 0.25 }}
+                  className="overflow-hidden"
+                >
+                  <TextField
+                    label="Student ID"
+                    placeholder="e.g. 2026-CS-042"
+                    icon={IdCard}
+                    error={errors.student_id?.message}
+                    {...register("student_id")}
+                  />
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <TextField
+                      label="Academic Year"
+                      type="number"
+                      placeholder="e.g. 2026"
+                      error={errors.academic_year?.message}
+                      {...register("academic_year")}
+                    />
+                    <TextField
+                      label="Semester"
+                      placeholder="e.g. Fall"
+                      error={errors.semester?.message}
+                      {...register("semester")}
+                    />
+                  </div>
+                </motion.div>
+              )}
 
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full"
-              isLoading={isSubmitting}
-            >
-              Create account
-              <ArrowRight className="size-4" />
-            </Button>
-          </form>
-        </GlassCard>
-      </motion.div>
+              <TextField
+                label="Department (optional)"
+                placeholder="e.g. English Literature"
+                {...register("department")}
+              />
+
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full"
+                isLoading={isSubmitting}
+              >
+                Create account
+                <ArrowRight className="size-4" />
+              </Button>
+            </form>
+          </GlassCard>
+        </motion.div>
+      )}
 
       <motion.p variants={fadeUp} className="mt-6 text-center text-sm text-mist">
         Already a member?{" "}

@@ -17,8 +17,10 @@ import { GlassCard } from "~/components/ui/glass-card";
 import { Button } from "~/components/ui/button";
 import { TextField } from "~/components/ui/text-field";
 import { fadeUp, staggerContainer } from "~/components/motion/presets";
+import { checkRateLimit, equalizeTiming } from "~/lib/auth-security";
 
 export async function action({ request }: Route.ActionArgs) {
+  const startTime = Date.now();
   const formData = await request.formData();
   const parsed = loginSchema.safeParse(Object.fromEntries(formData));
 
@@ -29,6 +31,22 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
 
+  // Rate Limiting Check
+  const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
+  const rateLimitKey = `login:${clientIp}:${parsed.data.email.toLowerCase()}`;
+  const rateCheck = checkRateLimit(rateLimitKey, 5, 15 * 60 * 1000, 15 * 60 * 1000);
+
+  if (!rateCheck.success) {
+    await equalizeTiming(startTime, 400);
+    return data(
+      {
+        error: "Too many login attempts. Account temporarily locked for protection. Please try again in 15 minutes.",
+        errors: null,
+      },
+      { status: 429 },
+    );
+  }
+
   const { client, headers } = createSupabaseServerClient(request);
   const { error } = await client.auth.signInWithPassword({
     email: parsed.data.email,
@@ -36,7 +54,9 @@ export async function action({ request }: Route.ActionArgs) {
   });
 
   if (error) {
-    return data({ error: error.message, errors: null }, { status: 400 });
+    await equalizeTiming(startTime, 400);
+    // Generic error message to prevent user enumeration
+    return data({ error: "Invalid email or password.", errors: null }, { status: 400 });
   }
 
   throw redirect("/", { headers });
@@ -106,15 +126,25 @@ export default function Login() {
               error={errors.email?.message}
               {...register("email")}
             />
-            <TextField
-              label="Password"
-              reveal
-              autoComplete="current-password"
-              placeholder="••••••••"
-              icon={Lock}
-              error={errors.password?.message}
-              {...register("password")}
-            />
+            <div>
+              <TextField
+                label="Password"
+                reveal
+                autoComplete="current-password"
+                placeholder="••••••••"
+                icon={Lock}
+                error={errors.password?.message}
+                {...register("password")}
+              />
+              <div className="mt-1.5 text-right">
+                <Link
+                  to="/forgot-password"
+                  className="text-xs font-medium text-gold-600 hover:underline dark:text-gold-300"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+            </div>
 
             <Button
               type="submit"

@@ -1,169 +1,201 @@
-# Athenaeum
+<div align="center">
 
-A handcrafted, premium library management system — *"quiet luxury"* glassmorphism
-aesthetic, fluid Framer Motion interactions, and a secure Supabase backend with
-role-based access control.
+# 🏛️ ATHENAEUM
+### *Next-Generation Academic Library Platform*
 
-Built on **React Router v8** (Remix's successor — same loader/action/route-module
-conventions), **Tailwind CSS v4**, **Zustand**, **TanStack React Query**, and
-**Supabase** (Postgres, Auth, Storage).
+[![Live Demo](https://img.shields.io/badge/Live_Demo-lms--ten--dusky.vercel.app-gold?style=for-the-badge&logo=vercel&logoColor=white)](https://lms-ten-dusky.vercel.app/)
+[![React Router](https://img.shields.io/badge/React_Router-v8.1-CA4245?style=for-the-badge&logo=reactrouter&logoColor=white)](https://reactrouter.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-Database_%26_Auth-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4.0-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](#license)
 
-## Roles & RBAC
+<p align="center">
+  <b>Athenaeum</b> is a state-of-the-art library management system crafted with a <i>"quiet luxury"</i> glassmorphic interface, fluid motion physics, multi-branch circulation engines, enterprise security, and real-time analytical dashboards.
+</p>
 
-| Role        | Capabilities                                              |
-| ----------- | -------------------------------------------------------- |
-| Student     | Browse catalog, borrow, wishlist, view own history       |
-| Faculty     | Student privileges + extended loan limits (Phase 2)      |
-| Librarian   | Circulation engine: borrow/return/renew/holds (Phase 2)  |
-| Admin       | Full oversight: users, roles, analytics, multi-branch    |
+[✨ Live Demo](https://lms-ten-dusky.vercel.app/) · [🛡️ Security Architecture](#-security-architecture) · [🚀 Quick Start](#-getting-started) · [📚 Documentation](#-system-architecture)
 
-Access is enforced in **two layers**:
+</div>
 
-1. **Server-side route guards** (`app/lib/auth.ts`) — `requireAuth` /
-   `requireRole` redirect unauthenticated or under-privileged requests before
-   any UI renders.
-2. **Supabase Row Level Security** (`supabase/schema.sql`) — every query is
-   isolated by role at the database level, even if the client is bypassed.
+---
 
-## Getting started
+## 🌟 Key Highlights
 
-### 1. Environment
+- **🎨 Quiet Luxury Design System** — Deep ink charcoals, warm ivory paper tones, brushed gold accents, frosted glassmorphism (`.glass-strong`), and Framer Motion micro-interactions.
+- **🛡️ Hardened Authentication & Zero-Enumeration** — Multi-layered defense against credential harvesting, timing attacks, brute-force attempts, and unauthorized access.
+- **⚡ Modern Tech Stack** — React Router v8 (SSR & route modules), Tailwind CSS v4, Zustand state management, and TanStack React Query.
+- **📖 Comprehensive Circulation Engine** — Real-time checkout, return, renewal, hold queues, and mobile camera QR/Barcode scanning for instant book check-in (`/circulation?checkin=<barcode>`).
+- **💰 Financials & Automated Fine Accrual** — Configurable fine policies, automated daily cron jobs via `pg_cron`, interactive financial charts (Recharts), and fine payment QR code generation.
+- **🏢 Multi-Branch & Digital Library** — Inter-branch book transfers, e-book reader support with secure Supabase Storage buckets, and recommendation engines.
 
-Copy the template and fill in your Supabase project credentials:
+---
+
+## 🛡️ Security Architecture
+
+Athenaeum implements a **defense-in-depth security model** protecting both the API surface and the database layer:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          INCOMING HTTP REQUEST                          │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │
+                                     ▼
+       ┌──────────────────────────────────────────────────────────┐
+       │ 1. Sliding-Window Rate Limiting & Account Lockout Guard  │
+       │    (Max 5 attempts / 15-min window per IP + Email target)│
+       └─────────────────────────────┬────────────────────────────┘
+                                     │
+                                     ▼
+       ┌──────────────────────────────────────────────────────────┐
+       │ 2. Equalized Execution Timing & Constant-Time Responses  │
+       │    (Mitigates timing attacks & eliminates user enum)     │
+       └─────────────────────────────┬────────────────────────────┘
+                                     │
+                                     ▼
+       ┌──────────────────────────────────────────────────────────┐
+       │ 3. Server Route Guards (`app/lib/auth.ts`)               │
+       │    (Hierarchical role validation: Student < Admin)       │
+       └─────────────────────────────┬────────────────────────────┘
+                                     │
+                                     ▼
+       ┌──────────────────────────────────────────────────────────┐
+       │ 4. Supabase Row Level Security (RLS) (`schema.sql`)      │
+       │    (Database-level isolation & SECURITY DEFINER policy)  │
+       └──────────────────────────────────────────────────────────┘
+```
+
+### Security Capabilities
+- **User Enumeration Prevention:** All auth routes (`login`, `signup`, `forgot-password`) return uniform, generic messages (e.g., *"Invalid email or password"*) with constant-time execution delays (`equalizeTiming`).
+- **Cryptographic Reset Tokens:** Password reset tokens use 256-bit entropy (`crypto.randomBytes(32)`), are stored exclusively as **SHA-256 digests**, expire strictly after **1 hour**, and enforce single-use consumption.
+- **Email Verification Guard:** New registrations require confirmed email ownership before account activation.
+- **Slow KDF Password Storage:** Passwords are hashed using slow, memory-hard key derivation algorithms (bcrypt / Argon2) via Supabase Auth.
+
+---
+
+## 👥 Role-Based Access Control (RBAC)
+
+Athenaeum enforces hierarchical permissions across 4 distinct user tiers:
+
+| Role | Hierarchy | Capabilities |
+| :--- | :---: | :--- |
+| **Student** | Tier 1 | Browse catalog, reserve books, hold items, view borrowing history & personal fines. |
+| **Faculty** | Tier 2 | Extended 28-day loan limits, higher borrowing caps (10 items), digital resource access. |
+| **Librarian** | Tier 3 | Circulation console: issue/return loans, manage hold queues, camera barcode scanner. |
+| **Admin** | Tier 4 | Full system oversight: role management, branch creation, fine policies & financial analytics. |
+
+---
+
+## 🛠️ System Architecture
+
+```
+app/
+├── root.tsx                  # HTML shell, fonts, theme & provider injection
+├── routes.ts                 # React Router v8 configuration
+├── app.css                   # Tailwind v4 design tokens (ink/gold/paper, glass)
+├── routes/
+│   ├── _auth.tsx             # Auth layout (split-screen with Hyperspeed canvas)
+│   ├── _auth.login.tsx       # Rate-limited login with generic anti-enumeration
+│   ├── _auth.signup.tsx      # Registration with email verification enforcement
+│   ├── _auth.forgot-password.tsx # Secure SHA-256 reset token generator
+│   ├── _auth.reset-password.tsx  # Single-use reset token validator
+│   ├── _dashboard.tsx        # Protected application shell
+│   ├── _dashboard._index.tsx # Personalized user portal
+│   ├── _dashboard.catalog.tsx# Interactive catalog (filters, search, holds)
+│   ├── _dashboard.circulation.tsx # Circulation console & barcode camera scanner
+│   ├── _dashboard.admin.tsx  # Admin portal (user management & financial charts)
+│   └── _dashboard.profile.tsx# User profile & borrowing settings
+├── lib/
+│   ├── auth.ts               # Route guards (requireAuth, requireRole)
+│   ├── auth-security.ts      # Rate limiter, token hasher & timing equalizers
+│   ├── validation.ts         # Zod schemas for request validation
+│   └── supabase/             # Server/client clients, cookies & RLS types
+└── components/
+    ├── ui/                   # Glass cards, buttons, text fields, badges
+    ├── layout/               # Navigation sidebar, topbar, page headers
+    └── motion/               # Framer Motion animation presets
+```
+
+---
+
+## 🚀 Getting Started
+
+### 1. Prerequisites
+- **Node.js**: `v20.0.0` or higher
+- **npm**: `v10.0.0` or higher
+- **Supabase Account**: A free or paid Supabase project
+
+### 2. Installation & Configuration
+
+Clone the repository and install dependencies:
 
 ```bash
-cp .env.example .env
+git clone https://github.com/Satyasisir-06/LMS.git
+cd LMS
+npm install
 ```
 
-```
+Copy `.env.example` to `.env` and populate your credentials:
+
+```env
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-anon-public-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-secret-key
 ```
 
-> The anon key is safe to expose (RLS enforces access). The service-role key is
-> server-only and never reaches the browser.
+### 3. Database Setup
 
-### 2. Database
+Run the schema and migration scripts in your **Supabase SQL Editor**:
 
-Run `supabase/schema.sql` in the Supabase SQL editor (or `supabase db push`).
-This creates the `user_role` enum, `profiles` table, the auto-profile trigger on
-signup, RLS policies, and admin tooling (`set_user_role`).
+1. Execute `supabase/schema.sql` (Creates RBAC, profiles, triggers & RLS policies).
+2. Execute `supabase/migrations/20260726000000_password_resets.sql` (Password reset table & functions).
 
-### 3. Develop
+### 4. Run Development Server
 
 ```bash
-npm install
-npm run dev      # http://localhost:5173
+npm run dev
 ```
 
-### 4. First admin
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-Sign up via the UI (creates a `student` profile), then promote yourself in the
-SQL editor:
+---
 
-```sql
-update public.profiles set role = 'admin'
-where id = (select id from auth.users where email = 'you@university.edu');
-```
+## 💻 Available Scripts
 
-After that, use `select public.set_user_role('<uuid>', 'librarian');` to manage
-roles. Sign out and back in to pick up the new role.
+| Script | Command | Purpose |
+| :--- | :--- | :--- |
+| **Development** | `npm run dev` | Starts Vite dev server with Hot Module Replacement (HMR) |
+| **Build** | `npm run build` | Compiles production client assets and server bundle |
+| **Start** | `npm run start` | Launches production server via `@react-router/serve` |
+| **Type Check** | `npm run typecheck` | Validates TypeScript types and route module declarations |
 
-## Scripts
+---
 
-| Command             | Purpose                                  |
-| ------------------- | ---------------------------------------- |
-| `npm run dev`       | Dev server with HMR                      |
-| `npm run build`     | Production build (client + server)       |
-| `npm run start`     | Serve the production build (Node)        |
-| `npm run typecheck` | Generate route types + `tsc`             |
+## 🌐 Deployment
 
-## Architecture (Phase 1)
+The application is optimized for deployment on **Vercel** or any Node.js / Docker container host.
 
-```
-app/
-├─ root.tsx                 HTML shell, fonts, providers, ENV + theme injection
-├─ routes.ts                Route config (auth + dashboard layouts)
-├─ app.css                  Tailwind v4 design tokens (ink/gold/paper, glass, motion)
-├─ routes/
-│  ├─ _auth.tsx             Auth layout (split-screen + aurora)
-│  ├─ _auth.login.tsx       Sign-in (RHF + zod + Supabase)
-│  ├─ _auth.signup.tsx      Sign-up with role selection
-│  ├─ _dashboard.tsx        Protected shell (loader gate + headers forwarding)
-│  ├─ _dashboard._index.tsx Personalized dashboard home
-│  ├─ _dashboard.catalog.tsx Catalog (visual; wired in Phase 2)
-│  ├─ _dashboard.circulation.tsx  Librarian+ (Phase 2)
-│  ├─ _dashboard.admin.tsx        Admin-only (Phase 3/4)
-│  ├─ _dashboard.profile.tsx      Real account details
-│  └─ logout.tsx            Sign-out action
-├─ lib/
-│  ├─ auth.ts               getAuthUser / requireAuth / requireRole
-│  ├─ navigation.ts         Role-gated nav config
-│  ├─ validation.ts         zod schemas
-│  └─ supabase/             env, browser + server clients, cookies, types
-├─ stores/                  Zustand: auth-store, ui-store (sidebar + theme)
-├─ providers/               QueryProvider, ThemeProvider, AppProvider (user ctx)
-└─ components/              ui/ (glass, button, field, badge, logo, aurora…)
-                           layout/ (sidebar, topbar, page-header)
-                           dashboard/ (stat-card)
-                           motion/ (Framer Motion variants)
-supabase/
-└─ schema.sql               RBAC schema, profiles, RLS, triggers
-```
+- **Live URL:** [https://lms-ten-dusky.vercel.app/](https://lms-ten-dusky.vercel.app/)
 
-### Design system
+### Supabase Production URL Configuration
+Set the following under **Authentication ➔ URL Configuration** in your Supabase Dashboard:
 
-- **Typography** — Playfair Display (serif display) + Inter (sans) + JetBrains Mono.
-- **Palette** — deep *ink* charcoal, muted *gold* accent, warm *paper* ivory
-  (dark-first with a light toggle, no-FOUC).
-- **Glassmorphism** — `.glass` / `.glass-strong` frosted surfaces with backdrop
-  blur and hairline gold borders.
-- **Motion** — shared Framer Motion presets (`fadeUp`, `staggerContainer`, …),
-  animated route transitions, sidebar active-indicator (`layoutId`), aurora halo.
+- **Site URL:** `https://lms-ten-dusky.vercel.app`
+- **Redirect URLs:**
+  ```text
+  https://lms-ten-dusky.vercel.app/reset-password
+  https://lms-ten-dusky.vercel.app/login
+  https://lms-ten-dusky.vercel.app/**
+  ```
 
-## Deployment
+---
 
-The production build (`npm run build`) outputs a server-rendered Node app served
-by `@react-router/serve` (`npm run start`) and is Docker-ready (see `Dockerfile`).
+## 📄 License
 
-**Vercel:** React Router's official Vercel adapter (`@vercel/react-router`)
-currently targets v7; v8 support is pending upstream release. Until then,
-deploy via the Node runtime or Docker. When the v8-compatible adapter lands,
-wire it in via the `presets` option in `react-router.config.ts`.
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
-## Status & roadmap
+---
 
-The project has moved well beyond its original "Phase 1" scope. The following
-are **implemented and live** in the codebase (each backed by the corresponding
-`supabase/migrations/2026*` files):
-
-- **Phase 1** — Auth + RBAC shell, role-gated navigation, dashboard, profile.
-- **Phase 2** — Catalog (search/filter by genre & branch, holds), Circulation
-  (check-out / check-in / renew / hold queue, QR/barcode camera scan), and a
-  Borrowing Transaction Card whose QR is a deep link (`/circulation?checkin=<barcode>`)
-  that opens Check In pre-filled when scanned by any camera app,
-  Catalog Management (branches, categories, authors, books, physical copies).
-- **Phase 3** — Financials & analytics: configurable `fine_settings`, an
-  `apply_overdue_fines` RPC + `apply-overdue-fines` Edge Function, admin
-  charts (Recharts), fine-policy controls, and per-user fines with a payment QR.
-- **Phase 4** — Multi-branch (branches + inter-branch transfers), digital
-  library (eBooks via Supabase Storage), wishlists, and category-based
-  recommendations.
-
-### Backlog (genuine remaining upgrades)
-
-These are the items still missing or only partially done — the real next steps:
-
-- **Admin user & role management UI** — implemented: the Administration page
-  lists members and promotes/demotes roles via `set_user_role`.
-- **Automate fine accrual** — done: a `pg_cron` job runs `apply_overdue_fines()`
-  daily at 02:00 (see `20260716000000_schedule_overdue_fines.sql`).
-- **Real fine payment** — payment is a placeholder `pay.athenaeum.edu` URL +
-  static QR; wire an actual provider (e.g. Stripe) or a configurable link.
-- **Faculty extended loan limits** — enforced: faculty get a 28-day loan period
-  (vs 14 days for students) and a 10-title borrowing cap (vs 5).
-- **Richer recommendations** — current engine is simple category-based; consider
-  collaborative filtering.
-- **Vercel deploy** — `@vercel/react-router` targets RR v7; a v8-compatible
-  adapter is still pending upstream (deploy via Node/Docker for now).
+<div align="center">
+  <sub>Crafted with precision for modern academic libraries. Designed & Engineered by <a href="https://github.com/Satyasisir-06">Satyasisir</a>.</sub>
+</div>

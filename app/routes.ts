@@ -8,6 +8,8 @@ export default [
   layout("routes/_auth.tsx", [
     route("login", "routes/_auth.login.tsx"),
     route("signup", "routes/_auth.signup.tsx"),
+    route("forgot-password", "routes/_auth.forgot-password.tsx"),
+    route("reset-password", "routes/_auth.reset-password.tsx"),
   ]),
 
   // Protected application shell
@@ -24,6 +26,9 @@ export default [
 
   // Sign-out (POST)
   route("logout", "routes/logout.tsx"),
+
+  // Visual Editor route
+  route("editor", "routes/editor.tsx"),
 
   // TEMP verification route
   route("gooey-check", "routes/gooey-check.tsx"),
