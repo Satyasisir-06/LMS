@@ -98,61 +98,69 @@ Athenaeum enforces hierarchical permissions across 4 distinct user tiers:
 ## 🗺️ System Architecture & Dependency Graph
 
 ```mermaid
-graph TD
-    subgraph Client ["🌐 Client Layer (Browser)"]
-        UI ["Glassmorphic UI (Tailwind v4 + Framer Motion)"]
-        Forms ["React Hook Form + Zod Resolvers"]
+flowchart TD
+    subgraph Client ["Client Layer - Browser"]
+        UI["Glassmorphic UI - Tailwind v4 + Framer Motion"]
+        Forms["React Hook Form + Zod Resolvers"]
     end
 
-    subgraph Router ["⚡ Application & Route Layer (React Router v8)"]
-        LandingRoute ["/ (Landing Page)"]
+    subgraph Router ["Application & Route Layer - React Router v8"]
+        LandingRoute["/ - Landing Page"]
         
         subgraph AuthRoutes ["Security Guarded Auth Routes"]
-            LoginRoute ["/login (Rate-Limited, Anti-Enum)"]
-            SignupRoute ["/signup (Rate-Limited, Strict Validation)"]
-            ForgotRoute ["/forgot-password (256-bit SHA-256 Token Gen)"]
-            ResetRoute ["/reset-password (Single-Use Token Verification)"]
+            LoginRoute["/login - Rate-Limited, Anti-Enum"]
+            SignupRoute["/signup - Rate-Limited, Strict Validation"]
+            ForgotRoute["/forgot-password - 256-bit SHA-256 Token Gen"]
+            ResetRoute["/reset-password - Single-Use Token Verification"]
         end
 
-        subgraph DashboardRoutes ["Protected Dashboard Routes (requireAuth)"]
-            DashIndex ["/dashboard (Personal Portal)"]
-            CatalogRoute ["/catalog (Search & Hold Queue)"]
-            WishlistRoute ["/wishlist (Saved Books)"]
-            ProfileRoute ["/profile (User Account)"]
+        subgraph DashboardRoutes ["Protected Dashboard Routes - requireAuth"]
+            DashIndex["/dashboard - Personal Portal"]
+            CatalogRoute["/catalog - Search & Hold Queue"]
+            WishlistRoute["/wishlist - Saved Books"]
+            ProfileRoute["/profile - User Account"]
             
-            subgraph LibrarianRoutes ["Librarian Tier (requireRole: librarian)"]
-                ManageRoute ["/manage (Catalog & Inventory)"]
-                CirculationRoute ["/circulation (Barcode QR Scanner)"]
-                OverdueRoute ["/overdue (Fine Accrual Management)"]
+            subgraph LibrarianRoutes ["Librarian Tier - requireRole librarian"]
+                ManageRoute["/manage - Catalog & Inventory"]
+                CirculationRoute["/circulation - Barcode QR Scanner"]
+                OverdueRoute["/overdue - Fine Accrual Management"]
             end
             
-            subgraph AdminRoutes ["Admin Tier (requireRole: admin)"]
-                AdminRoute ["/admin (System Analytics & Financials)"]
+            subgraph AdminRoutes ["Admin Tier - requireRole admin"]
+                AdminRoute["/admin - System Analytics & Financials"]
             end
         end
     end
 
-    subgraph Security ["🛡️ Security & Middleware Engine (app/lib/auth-security.ts)"]
-        RateLimiter ["Sliding-Window Rate Limiter (IP + Email Target)"]
-        TimingEqualizer ["Equalized Execution Timing (Constant 400ms target)"]
-        TokenHasher ["Cryptographic SHA-256 Token Engine"]
-        ZodValidation ["Zod Schema Validation Engine"]
-        RBACGuard ["Hierarchical RBAC Evaluator (Student < Admin)"]
+    subgraph Security ["Security & Middleware Engine"]
+        RateLimiter["Sliding-Window Rate Limiter"]
+        TimingEqualizer["Equalized Execution Timing"]
+        TokenHasher["Cryptographic SHA-256 Token Engine"]
+        ZodValidation["Zod Schema Validation Engine"]
+        RBACGuard["Hierarchical RBAC Evaluator"]
     end
 
-    subgraph Database ["🗄️ Database & Backend Layer (Supabase)"]
-        AuthService ["Supabase Auth Service"]
-        DB ["PostgreSQL Database (RLS Enabled)"]
-        TokensTable ["password_reset_tokens (SHA-256 Hashes)"]
-        SecDefiner ["SECURITY DEFINER Functions (get_user_id_by_email)"]
+    subgraph Database ["Database & Backend Layer - Supabase"]
+        AuthService["Supabase Auth Service"]
+        DB["PostgreSQL Database - RLS Enabled"]
+        TokensTable["password_reset_tokens - SHA-256 Hashes"]
+        SecDefiner["SECURITY DEFINER Functions"]
     end
 
     Forms --> ZodValidation
-    AuthRoutes --> RateLimiter
-    AuthRoutes --> TimingEqualizer
-    AuthRoutes --> ZodValidation
-    DashboardRoutes --> RBACGuard
+    LoginRoute --> RateLimiter
+    LoginRoute --> TimingEqualizer
+    SignupRoute --> RateLimiter
+    ForgotRoute --> RateLimiter
+    ForgotRoute --> TimingEqualizer
+    ResetRoute --> RateLimiter
     
+    DashIndex --> RBACGuard
+    CatalogRoute --> RBACGuard
+    ManageRoute --> RBACGuard
+    CirculationRoute --> RBACGuard
+    AdminRoute --> RBACGuard
+
     ForgotRoute --> TokenHasher
     ResetRoute --> TokenHasher
     TokenHasher --> TokensTable
