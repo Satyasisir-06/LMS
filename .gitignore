@@ -11,3 +11,8 @@
 
 # Internal tooling
 /.commandcode/
+/.agent/
+/.agents/
+/.impeccable/
+/.planning/
+/scripts/
