@@ -33,7 +33,7 @@
 
 ## 🛡️ Security Architecture
 
-Athenaeum implements a **defense-in-depth security model** protecting both the API surface and the database layer:
+Athenaeum implements an enterprise-grade **defense-in-depth security model** protecting all API boundaries, route modules, and database operations:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -42,34 +42,43 @@ Athenaeum implements a **defense-in-depth security model** protecting both the A
                                      │
                                      ▼
        ┌──────────────────────────────────────────────────────────┐
-       │ 1. Sliding-Window Rate Limiting & Account Lockout Guard  │
-       │    (Max 5 attempts / 15-min window per IP + Email target)│
+       │ 1. Sliding-Window Rate Limiting & Lockout Engine         │
+       │    (IP + Target sliding window, auto stale cleanup)       │
        └─────────────────────────────┬────────────────────────────┘
                                      │
                                      ▼
        ┌──────────────────────────────────────────────────────────┐
        │ 2. Equalized Execution Timing & Constant-Time Responses  │
-       │    (Mitigates timing attacks & eliminates user enum)     │
+       │    (400ms execution target; eliminates side-channel leaks)│
        └─────────────────────────────┬────────────────────────────┘
                                      │
                                      ▼
        ┌──────────────────────────────────────────────────────────┐
-       │ 3. Server Route Guards (`app/lib/auth.ts`)               │
-       │    (Hierarchical role validation: Student < Admin)       │
+       │ 3. Schema Boundary Validation & Input Sanitization       │
+       │    (Strict Zod schema enforcement across all payloads)   │
        └─────────────────────────────┬────────────────────────────┘
                                      │
                                      ▼
        ┌──────────────────────────────────────────────────────────┐
-       │ 4. Supabase Row Level Security (RLS) (`schema.sql`)      │
-       │    (Database-level isolation & SECURITY DEFINER policy)  │
+       │ 4. Server Route Guards & Hierarchical RBAC                │
+       │    (Role validation: Student(1) < Faculty(2) < Lib(3) < Admin(4)) │
+       └─────────────────────────────┬────────────────────────────┘
+                                     │
+                                     ▼
+       ┌──────────────────────────────────────────────────────────┐
+       │ 5. Supabase Row Level Security (RLS) & Definer SQL       │
+       │    (Database-level policy isolation & SECURITY DEFINER)  │
        └──────────────────────────────────────────────────────────┘
 ```
 
-### Security Capabilities
-- **User Enumeration Prevention:** All auth routes (`login`, `signup`, `forgot-password`) return uniform, generic messages (e.g., *"Invalid email or password"*) with constant-time execution delays (`equalizeTiming`).
-- **Cryptographic Reset Tokens:** Password reset tokens use 256-bit entropy (`crypto.randomBytes(32)`), are stored exclusively as **SHA-256 digests**, expire strictly after **1 hour**, and enforce single-use consumption.
-- **Email Verification Guard:** New registrations require confirmed email ownership before account activation.
-- **Slow KDF Password Storage:** Passwords are hashed using slow, memory-hard key derivation algorithms (bcrypt / Argon2) via Supabase Auth.
+### Security Capabilities & Protections
+
+- **⚡ Sliding-Window Rate Limiting:** Applied across critical authentication routes (`/login`, `/signup`, `/forgot-password`, `/reset-password`). Uses IP and target-keyed sliding windows with automatic lockout windows (up to 30 min) and memory cleanup.
+- **🛡️ Anti-User Enumeration:** All auth endpoints return generic, uniform responses (*"If an account exists..."* / *"Invalid email or password"*) regardless of account existence.
+- **⏱️ Timing Attack Protection (`equalizeTiming`):** Auth actions enforce constant-time execution targets (minimum 400ms) to neutralize timing side-channel attacks for email harvesting.
+- **🔑 Cryptographic Password Reset Tokens:** Reset tokens generate 256-bit entropy (`crypto.randomBytes(32)`), are stored exclusively as **SHA-256 digests**, expire in **1 hour**, enforce single-use consumption (`used = true`), and utilize constant-time comparison (`crypto.timingSafeEqual`).
+- **📋 Schema-Based Input Validation:** Every incoming payload is validated against strict Zod schemas (`loginSchema`, `signupSchema`, `forgotPasswordSchema`, `resetPasswordSchema`) before execution.
+- **🔒 Database Row Level Security (RLS):** All database tables strictly enforce Supabase RLS. Sensitive email-to-ID lookups use `SECURITY DEFINER` SQL functions with restricted `search_path = public` to prevent SQL injection or permission escalation.
 
 ---
 
@@ -86,7 +95,80 @@ Athenaeum enforces hierarchical permissions across 4 distinct user tiers:
 
 ---
 
-## 🛠️ System Architecture
+## 🗺️ System Architecture & Dependency Graph
+
+```mermaid
+graph TD
+    subgraph Client ["🌐 Client Layer (Browser)"]
+        UI ["Glassmorphic UI (Tailwind v4 + Framer Motion)"]
+        Forms ["React Hook Form + Zod Resolvers"]
+    end
+
+    subgraph Router ["⚡ Application & Route Layer (React Router v8)"]
+        LandingRoute ["/ (Landing Page)"]
+        
+        subgraph AuthRoutes ["Security Guarded Auth Routes"]
+            LoginRoute ["/login (Rate-Limited, Anti-Enum)"]
+            SignupRoute ["/signup (Rate-Limited, Strict Validation)"]
+            ForgotRoute ["/forgot-password (256-bit SHA-256 Token Gen)"]
+            ResetRoute ["/reset-password (Single-Use Token Verification)"]
+        end
+
+        subgraph DashboardRoutes ["Protected Dashboard Routes (requireAuth)"]
+            DashIndex ["/dashboard (Personal Portal)"]
+            CatalogRoute ["/catalog (Search & Hold Queue)"]
+            WishlistRoute ["/wishlist (Saved Books)"]
+            ProfileRoute ["/profile (User Account)"]
+            
+            subgraph LibrarianRoutes ["Librarian Tier (requireRole: librarian)"]
+                ManageRoute ["/manage (Catalog & Inventory)"]
+                CirculationRoute ["/circulation (Barcode QR Scanner)"]
+                OverdueRoute ["/overdue (Fine Accrual Management)"]
+            end
+            
+            subgraph AdminRoutes ["Admin Tier (requireRole: admin)"]
+                AdminRoute ["/admin (System Analytics & Financials)"]
+            end
+        end
+    end
+
+    subgraph Security ["🛡️ Security & Middleware Engine (app/lib/auth-security.ts)"]
+        RateLimiter ["Sliding-Window Rate Limiter (IP + Email Target)"]
+        TimingEqualizer ["Equalized Execution Timing (Constant 400ms target)"]
+        TokenHasher ["Cryptographic SHA-256 Token Engine"]
+        ZodValidation ["Zod Schema Validation Engine"]
+        RBACGuard ["Hierarchical RBAC Evaluator (Student < Admin)"]
+    end
+
+    subgraph Database ["🗄️ Database & Backend Layer (Supabase)"]
+        AuthService ["Supabase Auth Service"]
+        DB ["PostgreSQL Database (RLS Enabled)"]
+        TokensTable ["password_reset_tokens (SHA-256 Hashes)"]
+        SecDefiner ["SECURITY DEFINER Functions (get_user_id_by_email)"]
+    end
+
+    Forms --> ZodValidation
+    AuthRoutes --> RateLimiter
+    AuthRoutes --> TimingEqualizer
+    AuthRoutes --> ZodValidation
+    DashboardRoutes --> RBACGuard
+    
+    ForgotRoute --> TokenHasher
+    ResetRoute --> TokenHasher
+    TokenHasher --> TokensTable
+
+    RBACGuard --> AuthService
+    AuthService --> DB
+    SecDefiner --> DB
+
+    style Client fill:#0f172a,stroke:#334155,color:#e2e8f0
+    style Security fill:#1e3a5f,stroke:#60a5fa,color:#e0f2fe
+    style AuthRoutes fill:#451a03,stroke:#f59e0b,color:#fef3c7
+    style DashboardRoutes fill:#064e3b,stroke:#10b981,color:#d1fae5
+    style Database fill:#3b0764,stroke:#a855f7,color:#f3e8ff
+```
+
+### Module Structure
 
 ```
 app/
