@@ -27,9 +27,6 @@ export default [
   // Sign-out (POST)
   route("logout", "routes/logout.tsx"),
 
-  // Visual Editor route
-  route("editor", "routes/editor.tsx"),
-
   // TEMP verification route
   route("gooey-check", "routes/gooey-check.tsx"),
 ] satisfies RouteConfig;
