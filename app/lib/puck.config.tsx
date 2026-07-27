@@ -1,6 +1,21 @@
 import React from "react";
 import { BookOpen, Sparkles, ArrowRight, ShieldCheck, Clock, Library, CheckCircle2 } from "lucide-react";
 
+/**
+ * Local Puck Config type — mirrors @puckeditor/core's Config<T> shape.
+ * Defined locally to avoid importing @puckeditor/core in SSR-reachable modules.
+ * The actual Config generic is only used inside editor-client.tsx (client-only).
+ */
+interface PuckComponentConfig {
+  fields: Record<string, { type: string; options?: Array<{ label: string; value: string }> }>;
+  defaultProps?: Record<string, unknown>;
+  render: (props: Record<string, any>) => React.ReactElement;
+}
+
+interface PuckConfig {
+  components: Record<string, PuckComponentConfig>;
+}
+
 export type ComponentProps = {
   Hero: {
     title: string;
@@ -47,7 +62,7 @@ export type ComponentProps = {
   };
 };
 
-export const puckConfig: any = {
+export const puckConfig: PuckConfig = {
   components: {
     Hero: {
       fields: {

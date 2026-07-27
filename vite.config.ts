@@ -13,9 +13,6 @@ export default defineConfig(({ mode }) => {
     resolve: {
       tsconfigPaths: true,
     },
-    ssr: {
-      noExternal: ["@puckeditor/core"],
-    },
     build: {
       rolldownOptions: {
         external: [/^node:/],
